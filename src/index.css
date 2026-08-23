@@ -1,0 +1,77 @@
+@import 'tailwindcss';
+@import 'yet-another-react-lightbox/styles.css';
+
+@theme inline {
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-sans: 'Lato', system-ui, sans-serif;
+
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --background: 38 40% 97%;
+  --foreground: 25 18% 22%;
+  --card: 36 35% 95%;
+  --card-foreground: 25 18% 22%;
+  --popover: 38 40% 97%;
+  --popover-foreground: 25 18% 22%;
+  --primary: 32 38% 52%;
+  --primary-foreground: 38 40% 98%;
+  --secondary: 35 30% 91%;
+  --secondary-foreground: 25 18% 28%;
+  --muted: 35 25% 90%;
+  --muted-foreground: 25 10% 45%;
+  --accent: 350 30% 88%;
+  --accent-foreground: 25 18% 22%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 34 22% 86%;
+  --input: 34 22% 86%;
+  --ring: 32 38% 52%;
+  --radius: 0.625rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    margin: 0;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-serif);
+    @apply font-medium tracking-tight text-foreground;
+  }
+}
+
+.yarl__root {
+  --yarl__color_backdrop: rgba(30, 22, 18, 0.92);
+}
