@@ -16,8 +16,10 @@ type EventGalleryScreenProps = {
   uploading: boolean
   uploadProgress: number
   error: string | null
+  canDeletePhotos: boolean
   getPhotoUrl: (path: string) => Promise<string | null>
   onUpload: (files: File[]) => void
+  onDeletePhoto: (photo: Photo) => Promise<void>
   onLogout: () => void
 }
 
@@ -29,8 +31,10 @@ export function EventGalleryScreen({
   uploading,
   uploadProgress,
   error,
+  canDeletePhotos,
   getPhotoUrl,
   onUpload,
+  onDeletePhoto,
   onLogout,
 }: EventGalleryScreenProps) {
   return (
@@ -44,7 +48,13 @@ export function EventGalleryScreen({
         onLogout={onLogout}
       />
 
-      <PhotoGallery photos={photos} loading={loadingPhotos} getPhotoUrl={getPhotoUrl} />
+      <PhotoGallery
+        photos={photos}
+        loading={loadingPhotos}
+        getPhotoUrl={getPhotoUrl}
+        canDeletePhotos={canDeletePhotos}
+        onDeletePhoto={onDeletePhoto}
+      />
 
       <AboutCoupleSection />
       <NewsSection />

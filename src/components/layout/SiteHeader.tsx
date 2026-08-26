@@ -15,7 +15,6 @@ type SiteHeaderProps = {
 }
 
 export function SiteHeader({
-  eventName,
   nickname,
   uploading,
   uploadProgress,

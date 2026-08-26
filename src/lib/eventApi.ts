@@ -48,3 +48,32 @@ export const setNickname = async (nickname: string) => {
     input_nickname: nickname,
   })
 }
+
+// Zwykłe logowanie (nie linkIdentity) - dla tego samego konta Google zawsze
+// wraca ten sam, stały auth.uid(), więc join_event bezpiecznie odnajduje
+// istniejący guest_session zamiast tworzyć duplikat (ON CONFLICT DO NOTHING).
+export const signInWithGoogle = async () => {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin,
+    },
+  })
+
+  if (error) {
+    throw error
+  }
+}
+
+// Po nieudanym/anulowanym logowaniu Supabase wraca z parametrami błędu
+// w query i/lub hashu URL.
+export const readAuthRedirectErrorCode = (): string | null => {
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+  const searchParams = new URLSearchParams(window.location.search)
+
+  return hashParams.get('error_code') ?? searchParams.get('error_code')
+}
+
+export const clearAuthRedirectParams = () => {
+  window.history.replaceState(null, '', window.location.pathname)
+}

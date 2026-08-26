@@ -1,13 +1,24 @@
 import Lightbox from 'yet-another-react-lightbox'
+import { Loader2, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { createFullSizePhotoUrl } from '@/lib/photoStorage'
 import type { Photo } from '@/types/photo'
-import { cn } from '@/lib/utils'
 
 type PhotoGalleryProps = {
   photos: Photo[]
   loading: boolean
   getPhotoUrl: (path: string) => Promise<string | null>
+  canDeletePhotos: boolean
+  onDeletePhoto: (photo: Photo) => Promise<void>
 }
 
 type GallerySlide = {
@@ -16,10 +27,18 @@ type GallerySlide = {
   fullPath: string
 }
 
-export function PhotoGallery({ photos, loading, getPhotoUrl }: PhotoGalleryProps) {
+export function PhotoGallery({
+  photos,
+  loading,
+  getPhotoUrl,
+  canDeletePhotos,
+  onDeletePhoto,
+}: PhotoGalleryProps) {
   const [slides, setSlides] = useState<GallerySlide[]>([])
   const [lightboxIndex, setLightboxIndex] = useState(-1)
-  console.log(slides)
+  const [pendingDeleteIndex, setPendingDeleteIndex] = useState<number | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
   useEffect(() => {
     let cancelled = false
 
@@ -71,6 +90,26 @@ export function PhotoGallery({ photos, loading, getPhotoUrl }: PhotoGalleryProps
     [photos]
   )
 
+  const handleConfirmDelete = useCallback(async () => {
+    if (pendingDeleteIndex === null) {
+      return
+    }
+
+    const photo = photos[pendingDeleteIndex]
+
+    if (!photo) {
+      setPendingDeleteIndex(null)
+      return
+    }
+
+    setDeleting(true)
+    await onDeletePhoto(photo)
+    setDeleting(false)
+    setPendingDeleteIndex(null)
+  }, [pendingDeleteIndex, photos, onDeletePhoto])
+
+  const pendingSlide = pendingDeleteIndex !== null ? slides[pendingDeleteIndex] : null
+
   return (
     <section
       id="galeria"
@@ -101,24 +140,43 @@ export function PhotoGallery({ photos, loading, getPhotoUrl }: PhotoGalleryProps
 
       {!loading && slides.length > 0 && (
         <div className="columns-2 gap-1 px-1 sm:columns-3 sm:px-2 md:columns-4 lg:columns-5 xl:columns-6">
-          {slides.map((slide, index) => (
-            <button
-              key={photos[index]?.id ?? index}
-              type="button"
-              onClick={() => openLightbox(index)}
-              className={cn(
-                'group mb-1 block w-full break-inside-avoid overflow-hidden rounded-sm shadow-sm transition-shadow',
-                'hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
-              )}
-            >
-              <img
-                src={slide.src}
-                alt={slide.alt}
-                loading="lazy"
-                className="w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-              />
-            </button>
-          ))}
+          {slides.map((slide, index) => {
+            const photo = photos[index]
+
+            return (
+              <div
+                key={photo?.id ?? index}
+                className="group relative mb-1 break-inside-avoid overflow-hidden rounded-sm shadow-sm transition-shadow hover:shadow-md"
+              >
+                <button
+                  type="button"
+                  onClick={() => openLightbox(index)}
+                  className="block w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <img
+                    src={slide.src}
+                    alt={slide.alt}
+                    loading="lazy"
+                    className="w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                  />
+                </button>
+
+                {canDeletePhotos && photo && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setPendingDeleteIndex(index)
+                    }}
+                    aria-label="Usuń zdjęcie"
+                    className="absolute right-1.5 top-1.5 flex size-7 items-center justify-center rounded-full bg-black/60 text-white shadow-sm transition-colors hover:bg-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 
@@ -128,6 +186,51 @@ export function PhotoGallery({ photos, loading, getPhotoUrl }: PhotoGalleryProps
         index={lightboxIndex}
         slides={slides.map(({ src, alt }) => ({ src, alt }))}
       />
+
+      <Dialog
+        open={pendingDeleteIndex !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleting) {
+            setPendingDeleteIndex(null)
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Usunąć zdjęcie?</DialogTitle>
+            <DialogDescription>
+              Tej operacji nie można cofnąć. Zdjęcie zniknie z galerii na stałe.
+            </DialogDescription>
+          </DialogHeader>
+
+          {pendingSlide?.src && (
+            <img
+              src={pendingSlide.src}
+              alt={pendingSlide.alt}
+              className="mt-4 max-h-64 w-full rounded-lg object-contain"
+            />
+          )}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={deleting}
+              onClick={() => setPendingDeleteIndex(null)}
+            >
+              Anuluj
+            </Button>
+            <Button type="button" variant="destructive" disabled={deleting} onClick={handleConfirmDelete}>
+              {deleting ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Trash2 className="size-4" />
+              )}
+              Usuń zdjęcie
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   )
 }

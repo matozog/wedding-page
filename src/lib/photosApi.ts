@@ -1,5 +1,5 @@
 import type { Photo, PhotoInsert } from '../types/photo'
-import { PHOTO_SELECT_FIELDS } from './constants'
+import { PHOTOS_BUCKET, PHOTO_SELECT_FIELDS } from './constants'
 import { createThumbnail } from './createThumbnail'
 import { uploadPhotoFile } from './photoStorage'
 import { supabase } from './supabase'
@@ -57,6 +57,24 @@ export const uploadPhotoWithThumbnail = async (
     mime_type: file.type,
     size_bytes: file.size,
   })
+
+  if (dbError) {
+    throw dbError
+  }
+}
+
+export const deletePhoto = async (photo: Photo) => {
+  const paths = [photo.storage_path, photo.thumbnail_storage_path].filter(
+    (path): path is string => Boolean(path)
+  )
+
+  const { error: storageError } = await supabase.storage.from(PHOTOS_BUCKET).remove(paths)
+
+  if (storageError) {
+    throw storageError
+  }
+
+  const { error: dbError } = await supabase.from('photos').delete().eq('id', photo.id)
 
   if (dbError) {
     throw dbError

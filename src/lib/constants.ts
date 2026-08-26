@@ -12,6 +12,8 @@ export const ALLOWED_PHOTO_MIME_TYPES = [
 
 export const SESSION_STORAGE_KEY = 'wedding-page:session' as const
 
+export const PENDING_GOOGLE_CODE_KEY = 'wedding-page:pending-google-code' as const
+
 export const SIGNED_URL_EXPIRY_SECONDS = 60 * 60
 
 export const THUMBNAIL_TRANSFORM = {

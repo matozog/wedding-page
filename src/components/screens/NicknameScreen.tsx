@@ -3,7 +3,9 @@ import { ErrorMessage } from '@/components/ui/ErrorMessage'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
 import { OnboardingLayout } from '@/components/layout/OnboardingLayout'
+import { GoogleIcon } from '@/components/icons/GoogleIcon'
 
 type NicknameScreenProps = {
   eventName: string
@@ -11,6 +13,7 @@ type NicknameScreenProps = {
   error: string | null
   onNicknameChange: (value: string) => void
   onSubmit: () => void
+  onGoogleLogin: () => void
 }
 
 export function NicknameScreen({
@@ -19,6 +22,7 @@ export function NicknameScreen({
   error,
   onNicknameChange,
   onSubmit,
+  onGoogleLogin,
 }: NicknameScreenProps) {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -51,6 +55,23 @@ export function NicknameScreen({
 
         <ErrorMessage message={error} />
       </form>
+
+      <div className="my-5 flex items-center gap-3">
+        <Separator className="flex-1" />
+        <span className="text-xs uppercase tracking-widest text-muted-foreground">lub</span>
+        <Separator className="flex-1" />
+      </div>
+
+      <Button
+        type="button"
+        variant="outline"
+        size="lg"
+        className="w-full gap-2"
+        onClick={onGoogleLogin}
+      >
+        <GoogleIcon />
+        Zaloguj się przez Google
+      </Button>
     </OnboardingLayout>
   )
 }

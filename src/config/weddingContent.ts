@@ -2,10 +2,10 @@ export const weddingContent = {
   defaultTitle: 'Nasze wesele',
   couple: {
     names: 'Wiktoria & Piotr',
-    date: '15 czerwca 2026',
-    venue: 'Pałac w Wilanowie, Warszawa',
+    date: '12 września 2026',
+    venue: 'Dom weselny Regent, Pawłów',
     story:
-      'Poznaliśmy się w 2019 roku podczas wspólnej wycieczki górskiej. Od pierwszej rozmowy wiedzieliśmy, że to coś wyjątkowego. Dziś, po latach pełnych przygód, śmiechu i wsparcia, chcemy świętować naszą miłość w gronie najbliższych.',
+      'Tutaj może jaka historia jak się poznaliście',
   },
   locations: {
     ceremony: {
@@ -41,7 +41,7 @@ export const weddingContent = {
     },
   ],
   contact: {
-    email: 'anna.michal@example.com',
+    email: 'piotr.ozog@example.com',
     phone: '+48 123 456 789',
     note: 'W razie pytań dotyczących dojazdu, noclegu lub programu dnia — śmiało piszcie lub dzwońcie.',
   },
