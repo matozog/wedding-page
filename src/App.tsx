@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { CodeEntryScreen } from '@/components/screens/CodeEntryScreen'
 import { EventGalleryScreen } from '@/components/screens/EventGalleryScreen'
 import { NicknameScreen } from '@/components/screens/NicknameScreen'
@@ -19,6 +19,7 @@ function App() {
     setError: setSessionError,
     checkCode,
     saveNickname,
+    logout,
   } = useEventSession()
 
   const eventId = session?.id ?? null
@@ -31,6 +32,12 @@ function App() {
     loadPhotos,
     getPhotoUrl,
   } = usePhotos(eventId)
+
+  useEffect(() => {
+    if (eventId) {
+      loadPhotos()
+    }
+  }, [eventId, loadPhotos])
 
   const handleUploadError = useCallback(
     (message: string) => {
@@ -68,6 +75,7 @@ function App() {
         error={error}
         getPhotoUrl={getPhotoUrl}
         onUpload={uploadPhotos}
+        onLogout={logout}
       />
     )
   }

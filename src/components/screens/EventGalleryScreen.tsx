@@ -1,5 +1,6 @@
 import { AboutCoupleSection } from '@/components/sections/AboutCoupleSection'
 import { ContactSection } from '@/components/sections/ContactSection'
+import { LocationMapSection } from '@/components/sections/LocationMapSection'
 import { NewsSection } from '@/components/sections/NewsSection'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { SiteHeader } from '@/components/layout/SiteHeader'
@@ -17,6 +18,7 @@ type EventGalleryScreenProps = {
   error: string | null
   getPhotoUrl: (path: string) => Promise<string | null>
   onUpload: (files: File[]) => void
+  onLogout: () => void
 }
 
 export function EventGalleryScreen({
@@ -29,6 +31,7 @@ export function EventGalleryScreen({
   error,
   getPhotoUrl,
   onUpload,
+  onLogout,
 }: EventGalleryScreenProps) {
   return (
     <div className="min-h-svh bg-background">
@@ -38,12 +41,14 @@ export function EventGalleryScreen({
         uploading={uploading}
         uploadProgress={uploadProgress}
         onUpload={onUpload}
+        onLogout={onLogout}
       />
 
       <PhotoGallery photos={photos} loading={loadingPhotos} getPhotoUrl={getPhotoUrl} />
 
       <AboutCoupleSection />
       <NewsSection />
+      <LocationMapSection />
       <ContactSection />
       <SiteFooter />
 

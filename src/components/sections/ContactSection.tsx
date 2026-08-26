@@ -6,7 +6,7 @@ export function ContactSection() {
   const { contact } = weddingContent
 
   return (
-    <section id="kontakt" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+    <section id="kontakt" className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
       <div className="mb-10 text-center">
         <p className="font-serif text-sm uppercase tracking-[0.3em] text-primary">Kontakt</p>
         <h2 className="mt-2 font-serif text-4xl text-foreground">Masz pytania?</h2>

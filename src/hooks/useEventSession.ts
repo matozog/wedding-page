@@ -89,6 +89,15 @@ export function useEventSession() {
     }
   }, [nickname, session])
 
+  const logout = useCallback(() => {
+    saveStoredSession(null)
+    setCode('')
+    setNickname('')
+    setSession(null)
+    setHasNickname(false)
+    setError(null)
+  }, [])
+
   return {
     code,
     setCode,
@@ -100,5 +109,6 @@ export function useEventSession() {
     setError,
     checkCode,
     saveNickname,
+    logout,
   }
 }

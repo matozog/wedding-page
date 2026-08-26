@@ -72,8 +72,11 @@ export function PhotoGallery({ photos, loading, getPhotoUrl }: PhotoGalleryProps
   )
 
   return (
-    <section id="galeria" className="w-full">
-      <div className="border-b border-border/60 bg-secondary/20 px-4 py-8 text-center sm:px-6">
+    <section
+      id="galeria"
+      className="w-full border-y border-border/60 bg-secondary/50 py-8 shadow-inner sm:py-10"
+    >
+      <div className="mb-8 px-4 text-center sm:px-6">
         <p className="font-serif text-sm uppercase tracking-[0.3em] text-primary">Wspomnienia</p>
         <h2 className="mt-2 font-serif text-4xl text-foreground">Galeria zdjęć</h2>
         <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground">
@@ -97,15 +100,15 @@ export function PhotoGallery({ photos, loading, getPhotoUrl }: PhotoGalleryProps
       )}
 
       {!loading && slides.length > 0 && (
-        <div className="columns-2 gap-1 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-6">
+        <div className="columns-2 gap-1 px-1 sm:columns-3 sm:px-2 md:columns-4 lg:columns-5 xl:columns-6">
           {slides.map((slide, index) => (
             <button
               key={photos[index]?.id ?? index}
               type="button"
               onClick={() => openLightbox(index)}
               className={cn(
-                'group mb-1 block w-full break-inside-avoid overflow-hidden',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+                'group mb-1 block w-full break-inside-avoid overflow-hidden rounded-sm shadow-sm transition-shadow',
+                'hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
               )}
             >
               <img

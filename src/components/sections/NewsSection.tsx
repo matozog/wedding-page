@@ -3,7 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export function NewsSection() {
   return (
-    <section id="aktualnosci" className="bg-secondary/40 px-4 py-16 sm:px-6 lg:px-8">
+    <section
+      id="aktualnosci"
+      className="border-y border-border/60 bg-secondary/70 px-4 py-14 sm:px-6 sm:py-16 lg:px-8"
+    >
       <div className="mx-auto max-w-7xl">
         <div className="mb-10 text-center">
           <p className="font-serif text-sm uppercase tracking-[0.3em] text-primary">Informacje</p>

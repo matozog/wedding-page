@@ -1,4 +1,4 @@
-import { Camera, Loader2 } from 'lucide-react'
+import { Camera, LogOut, Loader2 } from 'lucide-react'
 import { useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -11,6 +11,7 @@ type SiteHeaderProps = {
   uploading: boolean
   uploadProgress: number
   onUpload: (files: File[]) => void
+  onLogout: () => void
 }
 
 export function SiteHeader({
@@ -19,6 +20,7 @@ export function SiteHeader({
   uploading,
   uploadProgress,
   onUpload,
+  onLogout,
 }: SiteHeaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -33,6 +35,14 @@ export function SiteHeader({
           <p className="mt-1 text-sm text-muted-foreground">
             Witaj, <span className="font-medium text-foreground">{nickname}</span> — miło, że jesteś z nami
           </p>
+          <button
+            type="button"
+            onClick={onLogout}
+            className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+          >
+            <LogOut className="size-3" />
+            Zmień pseudonim / wyloguj
+          </button>
         </div>
 
         <div className="flex flex-col items-center gap-2 sm:items-end">

@@ -7,6 +7,16 @@ export const weddingContent = {
     story:
       'Poznaliśmy się w 2019 roku podczas wspólnej wycieczki górskiej. Od pierwszej rozmowy wiedzieliśmy, że to coś wyjątkowego. Dziś, po latach pełnych przygód, śmiechu i wsparcia, chcemy świętować naszą miłość w gronie najbliższych.',
   },
+  locations: {
+    ceremony: {
+      name: 'Kościół Podwyższenia Krzyża Świętego',
+      address: 'ul. Jana Pawła II 5, 22-170 Rejowiec Fabryczny',
+    },
+    reception: {
+      name: 'Dom Weselny Regent',
+      address: 'ul. Lubelska 72, 22-170 Pawłów',
+    },
+  },
   news: [
     {
       id: '1',
