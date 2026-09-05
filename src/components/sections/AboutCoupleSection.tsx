@@ -2,6 +2,7 @@ import { CalendarDays, Heart, MapPin } from 'lucide-react'
 import { weddingContent } from '@/config/weddingContent'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { PhotoCarousel } from '@/components/PhotoCarousel'
 
 export function AboutCoupleSection() {
   const { couple } = weddingContent
@@ -18,6 +19,8 @@ export function AboutCoupleSection() {
           <CardTitle className="text-3xl md:text-4xl">{couple.names}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6 pt-8">
+          <PhotoCarousel />
+
           <p className="mx-auto max-w-2xl text-center leading-relaxed text-muted-foreground">
             {couple.story}
           </p>

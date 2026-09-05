@@ -1,7 +1,8 @@
 import { AboutCoupleSection } from '@/components/sections/AboutCoupleSection'
 import { ContactSection } from '@/components/sections/ContactSection'
 import { LocationMapSection } from '@/components/sections/LocationMapSection'
-import { NewsSection } from '@/components/sections/NewsSection'
+import { SeatingPlanSection } from '@/components/sections/SeatingPlanSection'
+import { WeddingScheduleSection } from '@/components/sections/WeddingScheduleSection'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { SiteHeader } from '@/components/layout/SiteHeader'
 import { PhotoGallery } from '@/components/photos/PhotoGallery'
@@ -57,7 +58,8 @@ export function EventGalleryScreen({
       />
 
       <AboutCoupleSection />
-      <NewsSection />
+      <WeddingScheduleSection />
+      <SeatingPlanSection />
       <LocationMapSection />
       <ContactSection />
       <SiteFooter />
