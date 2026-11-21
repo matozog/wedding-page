@@ -30,9 +30,9 @@ grant execute on function pg_temp.act_as(uuid), pg_temp.expect_error(text, text)
 
 insert into auth.users (id, instance_id, aud, role, email, is_anonymous, raw_user_meta_data) values
   ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'admin@example.com', false, '{}'),
-  ('00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', null, true, '{}'),
-  ('00000000-0000-0000-0000-00000000000c', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', null, true, '{}'),
-  ('00000000-0000-0000-0000-00000000000d', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', null, true, '{}');
+  ('00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', null, true, '{"name":"Gość B"}'),
+  ('00000000-0000-0000-0000-00000000000c', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', null, true, '{"name":"Gość C"}'),
+  ('00000000-0000-0000-0000-00000000000d', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', null, true, '{"name":"Gość D"}');
 update public.profiles set is_platform_admin = true where id = '00000000-0000-0000-0000-00000000000a';
 
 \set A '''00000000-0000-0000-0000-00000000000a'''

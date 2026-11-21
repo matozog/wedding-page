@@ -11,22 +11,30 @@ type NicknameScreenProps = {
   eventName: string
   nickname: string
   error: string | null
+  submitting: boolean
   onNicknameChange: (value: string) => void
   onSubmit: () => void
   onGoogleLogin: () => void
+  // Powrót do wpisania kodu - tylko gdy kod nie został jeszcze sprawdzony.
+  onChangeCode?: () => void
 }
 
 export function NicknameScreen({
   eventName,
   nickname,
   error,
+  submitting,
   onNicknameChange,
   onSubmit,
   onGoogleLogin,
+  onChangeCode,
 }: NicknameScreenProps) {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
-    onSubmit()
+
+    if (!submitting) {
+      onSubmit()
+    }
   }
 
   return (
@@ -49,7 +57,7 @@ export function NicknameScreen({
           />
         </div>
 
-        <Button type="submit" className="w-full" size="lg">
+        <Button type="submit" className="w-full" size="lg" disabled={submitting}>
           Przejdź do strony
         </Button>
 
@@ -68,10 +76,23 @@ export function NicknameScreen({
         size="lg"
         className="w-full gap-2"
         onClick={onGoogleLogin}
+        disabled={submitting}
       >
         <GoogleIcon />
         Zaloguj się przez Google
       </Button>
+
+      {onChangeCode && (
+        <Button
+          type="button"
+          variant="ghost"
+          className="mt-3 w-full text-muted-foreground"
+          onClick={onChangeCode}
+          disabled={submitting}
+        >
+          Zmień kod dostępu
+        </Button>
+      )}
     </OnboardingLayout>
   )
 }

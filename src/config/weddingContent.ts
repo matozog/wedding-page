@@ -1,20 +1,20 @@
 export const weddingContent = {
   defaultTitle: 'Nasze wesele',
   couple: {
-    names: 'Wiktoria & Piotr',
-    date: '1 września 2015',
-    venue: 'Schodki w II LO',
+    names: 'Eunika & Mateusz',
+    date: '2 styczeń 2024',
+    venue: 'Politechnika Lubelska',
     story:
       'Tutaj może jaka historia jak się poznaliście',
   },
   locations: {
     ceremony: {
-      name: 'Kościół Podwyższenia Krzyża Świętego',
-      address: 'ul. Jana Pawła II 5, 22-170 Rejowiec Fabryczny',
+      name: 'Parafia Matki Bożej Różańcowej',
+      address: 'ul. Bursztynowa 20, 20-576 Lublin',
     },
     reception: {
-      name: 'Dom Weselny Regent',
-      address: 'ul. Lubelska 72, 22-170 Pawłów',
+      name: 'Dworek Jabłonna',
+      address: 'Jabłonna-Majątek 44 a, 23-114 Jabłonna-Majątek',
     },
   },
   // Plan dnia - zamockowane godziny/pozycje, podmieńcie na docelowy przebieg.
@@ -53,7 +53,7 @@ export const weddingContent = {
         y: 5,
         w: 19,
         h: 12,
-        guests: ['Wiktoria', 'Piotr'],
+        guests: ['Eunika', 'Mateusz'],
       },
       // Rząd wyrównany do jednakowej szerokości/rozstawu - oryginalny plan był
       // odręcznym szkicem, nie precyzyjnym pomiarem sali.
@@ -85,8 +85,8 @@ export const weddingContent = {
     ],
   },
   contact: {
-    email: 'piotr.ozog@example.com',
-    phone: '+48 887 887 162',
+    email: 'mateusz.ozog.dev@gmail.com',
+    phone: '+48 512 805 513',
     note: 'W razie pytań dotyczących dojazdu, noclegu lub programu dnia — śmiało piszcie lub dzwońcie.',
   },
   footer: {

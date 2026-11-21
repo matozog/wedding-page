@@ -31,15 +31,17 @@ end $$;
 grant execute on function pg_temp.act_as(uuid), pg_temp.expect_error(text, text) to public;
 
 -- users -----------------------------------------------------------------------
+-- Guests already gave a nickname (anonymous sign-in with a name) - the
+-- no-profile-yet stage is covered by 03_guest_onboarding.test.sql.
 insert into auth.users (id, instance_id, aud, role, email, is_anonymous, raw_user_meta_data) values
   ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'admin@example.com', false, '{"full_name":"Admin Platformy","avatar_url":"https://x/a.png"}'),
-  ('00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', null, true, '{}'),
-  ('00000000-0000-0000-0000-00000000000c', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', null, true, '{}'),
-  ('00000000-0000-0000-0000-00000000000d', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', null, true, '{}');
+  ('00000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', null, true, '{"name":"Gość B"}'),
+  ('00000000-0000-0000-0000-00000000000c', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', null, true, '{"name":"Gość C"}'),
+  ('00000000-0000-0000-0000-00000000000d', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', null, true, '{"name":"Gość D"}');
 
 select ok((select count(*) = 4 from public.profiles where id::text like '00000000-0000-0000-0000-00000000000_'), 'profile created for every auth user');
 select ok((select display_name = 'Admin Platformy' and not is_anonymous from public.profiles where id = '00000000-0000-0000-0000-00000000000a'), 'Google name copied to profile');
-select ok((select is_anonymous and display_name is null from public.profiles where id = '00000000-0000-0000-0000-00000000000b'), 'anonymous profile flagged');
+select ok((select is_anonymous and display_name = 'Gość B' from public.profiles where id = '00000000-0000-0000-0000-00000000000b'), 'anonymous profile flagged, nickname from sign-in');
 
 update public.profiles set is_platform_admin = true where id = '00000000-0000-0000-0000-00000000000a';
 
@@ -51,12 +53,12 @@ update public.profiles set is_platform_admin = true where id = '00000000-0000-00
 -- privileges --------------------------------------------------------------------
 create function public.__probe_default_privileges() returns int language sql as 'select 1';
 select ok(not has_function_privilege('anon', 'public.__probe_default_privileges()', 'execute'), 'new functions are not executable by anon by default');
-select ok(not has_function_privilege('anon', 'public.join_event(text)', 'execute'), 'anon cannot execute join_event');
+select ok(not has_function_privilege('anon', 'public.join_event(text, text)', 'execute'), 'anon cannot execute join_event');
 select ok(not has_function_privilege('authenticated', 'public.normalize_access_code(text)', 'execute'), 'internal helper not exposed to clients');
 
 -- events ------------------------------------------------------------------------
 select pg_temp.act_as(:A);
-select public.create_event('Wesele W&P', 'abc123', '2027-06-12 16:00+02') as event_id \gset
+select public.create_event('Wesele E&M', 'abc123', '2027-06-12 16:00+02') as event_id \gset
 select ok((select role = 'ADMIN' from public.event_members where event_id = :'event_id' and user_id = :A), 'creator becomes event ADMIN');
 select pg_temp.expect_error($$select public.create_event('Duplikat', ' ABC123 ')$$, 'duplicate access code rejected (case/space-insensitive)');
 select pg_temp.expect_error($$select public.create_event('Krótki', 'abc')$$, 'too short access code rejected');

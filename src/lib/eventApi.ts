@@ -1,13 +1,9 @@
-import type { EventSession } from '../types/event'
+import type { EventPreview, EventSession } from '../types/event'
 import type { EventRole } from '../types/role'
 import { supabase } from './supabase'
 
 // Kod błędu zwracany przez join_event() po zbyt wielu nieudanych próbach.
 export const RATE_LIMIT_ERROR_CODE = 'PT429'
-
-// Błąd przekierowania, gdy konto Google jest już powiązane z innym
-// użytkownikiem i nie da się go podpiąć do bieżącego konta anonimowego.
-export const IDENTITY_ALREADY_EXISTS_ERROR_CODE = 'identity_already_exists'
 
 export const getErrorCode = (err: unknown): string | null =>
   typeof err === 'object' && err !== null && 'code' in err && typeof err.code === 'string'
@@ -21,8 +17,10 @@ export const getErrorMessage = (err: unknown): string | null =>
 
 const getAuthRedirectUrl = () => window.location.origin + import.meta.env.BASE_URL
 
-// Każdy gość ma konto w Supabase - jeśli nie jest zalogowany, dostaje
-// konto anonimowe (profil w public.profiles tworzy trigger w bazie).
+// Sesja jest potrzebna już do sprawdzenia kodu (limit prób liczony na
+// użytkownika). Konto anonimowe nie ma jeszcze profilu - ten powstaje
+// dopiero w join_event() razem z pseudonimem. Porzucone konta bez profilu
+// usuwa codzienne zadanie w bazie.
 const ensureAuthSession = async () => {
   const {
     data: { session },
@@ -44,11 +42,44 @@ const ensureAuthSession = async () => {
   }
 }
 
-export const joinEvent = async (code: string): Promise<EventSession | null> => {
+// Sprawdza kod bez dołączania do wydarzenia. null dla błędnego kodu.
+export const checkEventCode = async (code: string): Promise<EventPreview | null> => {
+  await ensureAuthSession()
+
+  const { data, error } = await supabase.rpc('check_event_code', {
+    p_access_code: code,
+  })
+
+  if (error) {
+    throw error
+  }
+
+  const event = data?.[0]
+
+  if (!event) {
+    return null
+  }
+
+  return {
+    id: event.event_id,
+    name: event.event_name,
+    startsAt: event.starts_at,
+  }
+}
+
+// Dołącza do wydarzenia. Gość bez profilu musi podać pseudonim - profil
+// powstaje wtedy w tej samej transakcji co członkostwo. Sesja mogła zniknąć
+// od sprawdzenia kodu (wylogowanie w innej karcie, usunięte porzucone
+// konto) - wtedy powstaje nowa sesja anonimowa.
+export const joinEvent = async (
+  code: string,
+  displayName?: string
+): Promise<EventSession | null> => {
   await ensureAuthSession()
 
   const { data, error } = await supabase.rpc('join_event', {
     p_access_code: code,
+    p_display_name: displayName,
   })
 
   if (error) {
@@ -94,33 +125,9 @@ export const fetchMyEventRole = async (eventId: string): Promise<EventRole | nul
   return data?.role ?? null
 }
 
-// Gość anonimowy: podpinamy Google do jego obecnego konta (linkIdentity),
-// więc zachowuje to samo ID, członkostwo w wydarzeniu i zdjęcia.
-// Bez sesji anonimowej: zwykłe logowanie.
+// Supabase sam odnajduje istniejące konto po tożsamości Google, a gdy go
+// nie ma - zakłada nowe. Jedno przekierowanie do Google.
 export const signInWithGoogle = async () => {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-
-  if (session?.user.is_anonymous) {
-    const { error } = await supabase.auth.linkIdentity({
-      provider: 'google',
-      options: { redirectTo: getAuthRedirectUrl() },
-    })
-
-    if (error) {
-      throw error
-    }
-
-    return
-  }
-
-  await signInWithExistingGoogleAccount()
-}
-
-// Zwykłe logowanie Google - używane też, gdy konto Google jest już powiązane
-// z innym użytkownikiem i linkIdentity się nie udało.
-export const signInWithExistingGoogleAccount = async () => {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo: getAuthRedirectUrl() },

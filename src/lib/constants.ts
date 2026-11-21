@@ -27,7 +27,9 @@ export const PHOTO_INPUT_ACCEPT = 'image/jpeg,image/png,image/webp'
 
 export const SESSION_STORAGE_KEY = 'wedding-page:session:v2' as const
 
-export const PENDING_GOOGLE_CODE_KEY = 'wedding-page:pending-google-code' as const
+// Sprawdzony kod wydarzenia, który czeka na pseudonim albo logowanie Google
+// (przetrwa odświeżenie strony i przekierowanie do Google).
+export const PENDING_EVENT_KEY = 'wedding-page:pending-event' as const
 
 export const SIGNED_URL_EXPIRY_SECONDS = 60 * 60
 

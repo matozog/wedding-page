@@ -17,7 +17,9 @@ function App() {
     nickname,
     setNickname,
     session,
+    pendingEvent,
     initializing,
+    submitting,
     userId,
     hasNickname,
     error: sessionError,
@@ -25,6 +27,7 @@ function App() {
     checkCode,
     saveNickname,
     loginWithGoogle,
+    cancelPendingEvent,
     logout,
   } = useEventSession()
 
@@ -88,8 +91,9 @@ function App() {
 
   const error = sessionError ?? photosError
 
-  // Zapisane wydarzenie czeka na profil z bazy - bez tego mignąłby ekran pseudonimu.
-  if (initializing && session) {
+  // Zapisane wydarzenie czeka na profil z bazy, a kod sprzed logowania Google
+  // na dołączenie - bez tego mignąłby ekran pseudonimu.
+  if (initializing && (session || pendingEvent)) {
     return null
   }
 
@@ -112,15 +116,19 @@ function App() {
     )
   }
 
-  if (session) {
+  const nicknameEvent = session ?? pendingEvent
+
+  if (nicknameEvent) {
     return (
       <NicknameScreen
-        eventName={session.name}
+        eventName={nicknameEvent.name}
         nickname={nickname}
         error={sessionError}
+        submitting={submitting}
         onNicknameChange={setNickname}
         onSubmit={handleSaveNickname}
         onGoogleLogin={loginWithGoogle}
+        onChangeCode={session ? undefined : cancelPendingEvent}
       />
     )
   }
@@ -130,6 +138,7 @@ function App() {
       title={weddingContent.defaultTitle}
       code={code}
       error={sessionError}
+      submitting={submitting}
       onCodeChange={setCode}
       onSubmit={checkCode}
     />

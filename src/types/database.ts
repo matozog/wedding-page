@@ -539,9 +539,22 @@ export type Database = {
         Args: { p_event_id: string; p_user_id: string };
         Returns: undefined;
       };
+      check_event_code: {
+        Args: { p_access_code: string };
+        Returns: {
+          event_id: string;
+          event_name: string;
+          starts_at: string;
+        }[];
+      };
       clean_display_name: { Args: { p_value: string }; Returns: string };
+      cleanup_abandoned_anonymous_users: { Args: Record<PropertyKey, never>; Returns: number };
       create_event: {
         Args: { p_access_code: string; p_name: string; p_starts_at?: string };
+        Returns: string;
+      };
+      find_event_by_access_code: {
+        Args: { p_access_code: string; p_uid: string };
         Returns: string;
       };
       get_seating_plan: {
@@ -562,7 +575,7 @@ export type Database = {
       is_event_member: { Args: { p_event_id: string }; Returns: boolean };
       is_platform_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
       join_event: {
-        Args: { p_access_code: string };
+        Args: { p_access_code: string; p_display_name?: string };
         Returns: {
           event_id: string;
           event_name: string;
@@ -576,6 +589,7 @@ export type Database = {
       };
       normalize_access_code: { Args: { p_code: string }; Returns: string };
       remove_member: { Args: { p_event_id: string; p_user_id: string }; Returns: undefined };
+      require_display_name: { Args: { p_display_name: string }; Returns: string };
       set_display_name: { Args: { p_display_name: string }; Returns: undefined };
       set_member_role: {
         Args: {
@@ -588,6 +602,7 @@ export type Database = {
       shares_event_with: { Args: { p_user_id: string }; Returns: boolean };
       storage_path_event_id: { Args: { p_name: string }; Returns: string };
       storage_path_owner: { Args: { p_name: string }; Returns: string };
+      upsert_own_profile: { Args: { p_display_name: string; p_uid: string }; Returns: undefined };
     };
     Enums: {
       event_role: "ADMIN" | "EDITOR" | "GUEST";

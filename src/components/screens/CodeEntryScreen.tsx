@@ -9,6 +9,7 @@ type CodeEntryScreenProps = {
   title: string
   code: string
   error: string | null
+  submitting: boolean
   onCodeChange: (value: string) => void
   onSubmit: () => void
 }
@@ -17,12 +18,16 @@ export function CodeEntryScreen({
   title,
   code,
   error,
+  submitting,
   onCodeChange,
   onSubmit,
 }: CodeEntryScreenProps) {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
-    onSubmit()
+
+    if (!submitting) {
+      onSubmit()
+    }
   }
 
   return (
@@ -45,7 +50,7 @@ export function CodeEntryScreen({
           />
         </div>
 
-        <Button type="submit" className="w-full" size="lg">
+        <Button type="submit" className="w-full" size="lg" disabled={submitting}>
           Wejdź na stronę
         </Button>
 
