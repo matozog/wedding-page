@@ -22,15 +22,13 @@ export const insertPhoto = async (photo: PhotoInsert) => {
   return supabase.from('photos').insert(photo)
 }
 
-export const uploadPhotoWithThumbnail = async (
-  eventId: string,
-  guestSessionId: string,
-  file: File
-) => {
+// Ścieżki w Storage: {event_id}/{user_id}/originals|thumbnails/{plik} -
+// reguły dostępu w bazie pozwalają wgrywać tylko do własnego folderu.
+export const uploadPhotoWithThumbnail = async (eventId: string, userId: string, file: File) => {
   const fileId = crypto.randomUUID()
   const originalExtension = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
-  const originalPath = `${eventId}/originals/${fileId}.${originalExtension}`
-  const thumbnailPath = `${eventId}/thumbnails/${fileId}.jpg`
+  const originalPath = `${eventId}/${userId}/originals/${fileId}.${originalExtension}`
+  const thumbnailPath = `${eventId}/${userId}/thumbnails/${fileId}.jpg`
 
   const thumbnail = await createThumbnail(file)
 
@@ -50,7 +48,6 @@ export const uploadPhotoWithThumbnail = async (
 
   const { error: dbError } = await insertPhoto({
     event_id: eventId,
-    guest_session_id: guestSessionId,
     storage_path: originalPath,
     thumbnail_storage_path: thumbnailPath,
     original_filename: file.name,

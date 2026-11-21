@@ -1,5 +1,8 @@
+import type { EventRole } from './role'
+
 export type EventSession = {
   id: string
   name: string
-  guest_session_id: string
+  startsAt: string | null
+  role: EventRole
 }

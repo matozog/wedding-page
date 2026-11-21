@@ -10,7 +10,7 @@ export const ALLOWED_PHOTO_MIME_TYPES = [
   'image/heif',
 ] as const
 
-export const SESSION_STORAGE_KEY = 'wedding-page:session' as const
+export const SESSION_STORAGE_KEY = 'wedding-page:session:v2' as const
 
 export const PENDING_GOOGLE_CODE_KEY = 'wedding-page:pending-google-code' as const
 
@@ -32,6 +32,7 @@ export const FULLSIZE_TRANSFORM = {
 
 export const PHOTO_SELECT_FIELDS = `
   id,
+  uploaded_by,
   storage_path,
   thumbnail_storage_path,
   original_filename,

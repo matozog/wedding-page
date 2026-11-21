@@ -17,7 +17,7 @@ type PhotoGalleryProps = {
   photos: Photo[]
   loading: boolean
   getPhotoUrl: (path: string) => Promise<string | null>
-  canDeletePhotos: boolean
+  canDeletePhoto: (photo: Photo) => boolean
   onDeletePhoto: (photo: Photo) => Promise<void>
 }
 
@@ -31,7 +31,7 @@ export function PhotoGallery({
   photos,
   loading,
   getPhotoUrl,
-  canDeletePhotos,
+  canDeletePhoto,
   onDeletePhoto,
 }: PhotoGalleryProps) {
   const [slides, setSlides] = useState<GallerySlide[]>([])
@@ -45,7 +45,7 @@ export function PhotoGallery({
     const loadThumbnails = async () => {
       const loaded = await Promise.all(
         photos.map(async (photo) => {
-          const src = await getPhotoUrl(photo.thumbnail_storage_path)
+          const src = await getPhotoUrl(photo.thumbnail_storage_path ?? photo.storage_path)
           return {
             src: src ?? '',
             alt: photo.original_filename,
@@ -161,7 +161,7 @@ export function PhotoGallery({
                   />
                 </button>
 
-                {canDeletePhotos && photo && (
+                {photo && canDeletePhoto(photo) && (
                   <button
                     type="button"
                     onClick={(e) => {

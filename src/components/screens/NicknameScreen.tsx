@@ -44,7 +44,7 @@ export function NicknameScreen({
             placeholder="np. Kasia z Warszawy"
             value={nickname}
             onChange={(e) => onNicknameChange(e.target.value)}
-            maxLength={30}
+            maxLength={40}
             autoFocus
           />
         </div>

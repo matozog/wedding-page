@@ -1,19 +1,21 @@
-export type Photo = {
-  id: string
-  storage_path: string
-  thumbnail_storage_path: string
-  original_filename: string
-  mime_type: string
-  size_bytes: number
-  created_at: string
-}
+import type { Database } from './database'
 
-export type PhotoInsert = {
-  event_id: string
-  guest_session_id: string
-  storage_path: string
-  thumbnail_storage_path: string
-  original_filename: string
-  mime_type: string
-  size_bytes: number
-}
+type PhotoRow = Database['public']['Tables']['photos']['Row']
+
+export type Photo = Pick<
+  PhotoRow,
+  | 'id'
+  | 'uploaded_by'
+  | 'storage_path'
+  | 'thumbnail_storage_path'
+  | 'original_filename'
+  | 'mime_type'
+  | 'size_bytes'
+  | 'created_at'
+>
+
+// uploaded_by uzupełnia baza (domyślnie auth.uid()).
+export type PhotoInsert = Omit<
+  Database['public']['Tables']['photos']['Insert'],
+  'id' | 'uploaded_by' | 'created_at'
+>

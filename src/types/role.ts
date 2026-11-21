@@ -1,3 +1,7 @@
-export type AppRole = 'ADMIN' | 'EDITOR' | 'GUEST'
+import type { Database } from './database'
 
-export const canDeletePhotos = (role: AppRole) => role === 'ADMIN' || role === 'EDITOR'
+// Rola użytkownika w konkretnym wydarzeniu (tabela event_members).
+export type EventRole = Database['public']['Enums']['event_role']
+
+export const canManageAllPhotos = (role: EventRole | null) =>
+  role === 'ADMIN' || role === 'EDITOR'

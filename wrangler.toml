@@ -3,3 +3,14 @@ compatibility_date = "2026-09-05"
 
 [assets]
 directory = "./dist"
+
+# em.ozogowie.pl - Worker "wedding-page-em" budowany z tego brancha.
+# Build: npm run build  ->  dist/
+# Deploy: npx wrangler deploy --env em
+# custom_domain = true: Cloudflare sam tworzy rekord DNS i certyfikat SSL.
+[env.em]
+name = "wedding-page-em"
+routes = [{ pattern = "em.ozogowie.pl", custom_domain = true }]
+
+[env.em.assets]
+directory = "./dist"

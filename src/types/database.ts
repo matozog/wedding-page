@@ -1,0 +1,723 @@
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+
+export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never;
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      graphql: {
+        Args: { extensions?: Json; operationName?: string; query?: string; variables?: Json };
+        Returns: Json;
+      };
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
+  };
+  public: {
+    Tables: {
+      budget_categories: {
+        Row: {
+          created_at: string;
+          event_id: string;
+          id: string;
+          name: string;
+          planned_amount: number | null;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          event_id: string;
+          id?: string;
+          name: string;
+          planned_amount?: number | null;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          event_id?: string;
+          id?: string;
+          name?: string;
+          planned_amount?: number | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "budget_categories_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      event_members: {
+        Row: {
+          event_id: string;
+          joined_at: string;
+          role: Database["public"]["Enums"]["event_role"];
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          event_id: string;
+          joined_at?: string;
+          role?: Database["public"]["Enums"]["event_role"];
+          user_id: string;
+        };
+        Update: {
+          event_id?: string;
+          joined_at?: string;
+          role?: Database["public"]["Enums"]["event_role"];
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "event_members_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "event_members_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      events: {
+        Row: {
+          access_code_hash: string;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          name: string;
+          starts_at: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          access_code_hash: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          name: string;
+          starts_at?: string | null;
+        };
+        Update: {
+          access_code_hash?: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          name?: string;
+          starts_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "events_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      expense_payments: {
+        Row: {
+          amount: number;
+          created_at: string;
+          event_id: string;
+          expense_id: string;
+          id: string;
+          method: string | null;
+          notes: string | null;
+          paid_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          amount: number;
+          created_at?: string;
+          event_id: string;
+          expense_id: string;
+          id?: string;
+          method?: string | null;
+          notes?: string | null;
+          paid_at?: string;
+        };
+        Update: {
+          amount?: number;
+          created_at?: string;
+          event_id?: string;
+          expense_id?: string;
+          id?: string;
+          method?: string | null;
+          notes?: string | null;
+          paid_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "expense_payments_expense_fkey";
+            columns: ["event_id", "expense_id"];
+            isOneToOne: false;
+            referencedRelation: "expenses";
+            referencedColumns: ["event_id", "id"];
+          },
+        ];
+      };
+      expenses: {
+        Row: {
+          category_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          due_date: string | null;
+          event_id: string;
+          id: string;
+          notes: string | null;
+          status: Database["public"]["Enums"]["expense_status"];
+          title: string;
+          total_amount: number | null;
+          updated_at: string;
+          vendor_contact: string | null;
+          vendor_name: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          category_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          due_date?: string | null;
+          event_id: string;
+          id?: string;
+          notes?: string | null;
+          status?: Database["public"]["Enums"]["expense_status"];
+          title: string;
+          total_amount?: number | null;
+          updated_at?: string;
+          vendor_contact?: string | null;
+          vendor_name?: string | null;
+        };
+        Update: {
+          category_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          due_date?: string | null;
+          event_id?: string;
+          id?: string;
+          notes?: string | null;
+          status?: Database["public"]["Enums"]["expense_status"];
+          title?: string;
+          total_amount?: number | null;
+          updated_at?: string;
+          vendor_contact?: string | null;
+          vendor_name?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "expenses_category_fkey";
+            columns: ["event_id", "category_id"];
+            isOneToOne: false;
+            referencedRelation: "budget_categories";
+            referencedColumns: ["event_id", "id"];
+          },
+          {
+            foreignKeyName: "expenses_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "expenses_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      guest_groups: {
+        Row: {
+          created_at: string;
+          event_id: string;
+          id: string;
+          invitation_sent_at: string | null;
+          name: string;
+          notes: string | null;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          event_id: string;
+          id?: string;
+          invitation_sent_at?: string | null;
+          name: string;
+          notes?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          event_id?: string;
+          id?: string;
+          invitation_sent_at?: string | null;
+          name?: string;
+          notes?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "guest_groups_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      guests: {
+        Row: {
+          age_group: Database["public"]["Enums"]["guest_age_group"];
+          created_at: string;
+          diet: string | null;
+          email: string | null;
+          event_id: string;
+          first_name: string | null;
+          group_id: string | null;
+          id: string;
+          is_plus_one: boolean;
+          last_name: string | null;
+          needs_accommodation: boolean;
+          needs_transport: boolean;
+          notes: string | null;
+          phone: string | null;
+          rsvp_status: Database["public"]["Enums"]["rsvp_status"];
+          seat_number: number | null;
+          side: Database["public"]["Enums"]["guest_side"] | null;
+          table_id: string | null;
+          updated_at: string;
+          user_id: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          age_group?: Database["public"]["Enums"]["guest_age_group"];
+          created_at?: string;
+          diet?: string | null;
+          email?: string | null;
+          event_id: string;
+          first_name?: string | null;
+          group_id?: string | null;
+          id?: string;
+          is_plus_one?: boolean;
+          last_name?: string | null;
+          needs_accommodation?: boolean;
+          needs_transport?: boolean;
+          notes?: string | null;
+          phone?: string | null;
+          rsvp_status?: Database["public"]["Enums"]["rsvp_status"];
+          seat_number?: number | null;
+          side?: Database["public"]["Enums"]["guest_side"] | null;
+          table_id?: string | null;
+          updated_at?: string;
+          user_id?: string | null;
+        };
+        Update: {
+          age_group?: Database["public"]["Enums"]["guest_age_group"];
+          created_at?: string;
+          diet?: string | null;
+          email?: string | null;
+          event_id?: string;
+          first_name?: string | null;
+          group_id?: string | null;
+          id?: string;
+          is_plus_one?: boolean;
+          last_name?: string | null;
+          needs_accommodation?: boolean;
+          needs_transport?: boolean;
+          notes?: string | null;
+          phone?: string | null;
+          rsvp_status?: Database["public"]["Enums"]["rsvp_status"];
+          seat_number?: number | null;
+          side?: Database["public"]["Enums"]["guest_side"] | null;
+          table_id?: string | null;
+          updated_at?: string;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "guests_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "guests_group_fkey";
+            columns: ["event_id", "group_id"];
+            isOneToOne: false;
+            referencedRelation: "guest_groups";
+            referencedColumns: ["event_id", "id"];
+          },
+          {
+            foreignKeyName: "guests_table_fkey";
+            columns: ["event_id", "table_id"];
+            isOneToOne: false;
+            referencedRelation: "seating_tables";
+            referencedColumns: ["event_id", "id"];
+          },
+          {
+            foreignKeyName: "guests_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      join_attempts: {
+        Row: {
+          attempted_at: string;
+          id: number;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          attempted_at?: string;
+          id?: never;
+          user_id: string;
+        };
+        Update: {
+          attempted_at?: string;
+          id?: never;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      photos: {
+        Row: {
+          created_at: string;
+          event_id: string;
+          id: string;
+          mime_type: string;
+          original_filename: string;
+          size_bytes: number;
+          storage_path: string;
+          thumbnail_storage_path: string | null;
+          uploaded_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          event_id: string;
+          id?: string;
+          mime_type: string;
+          original_filename: string;
+          size_bytes: number;
+          storage_path: string;
+          thumbnail_storage_path?: string | null;
+          uploaded_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          event_id?: string;
+          id?: string;
+          mime_type?: string;
+          original_filename?: string;
+          size_bytes?: number;
+          storage_path?: string;
+          thumbnail_storage_path?: string | null;
+          uploaded_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "photos_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "photos_uploaded_by_fkey";
+            columns: ["uploaded_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      profiles: {
+        Row: {
+          avatar_url: string | null;
+          created_at: string;
+          display_name: string | null;
+          email: string | null;
+          id: string;
+          is_anonymous: boolean;
+          is_platform_admin: boolean;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          avatar_url?: string | null;
+          created_at?: string;
+          display_name?: string | null;
+          email?: string | null;
+          id: string;
+          is_anonymous?: boolean;
+          is_platform_admin?: boolean;
+          updated_at?: string;
+        };
+        Update: {
+          avatar_url?: string | null;
+          created_at?: string;
+          display_name?: string | null;
+          email?: string | null;
+          id?: string;
+          is_anonymous?: boolean;
+          is_platform_admin?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      seating_tables: {
+        Row: {
+          capacity: number | null;
+          created_at: string;
+          event_id: string;
+          id: string;
+          name: string;
+          notes: string | null;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          capacity?: number | null;
+          created_at?: string;
+          event_id: string;
+          id?: string;
+          name: string;
+          notes?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          capacity?: number | null;
+          created_at?: string;
+          event_id?: string;
+          id?: string;
+          name?: string;
+          notes?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "seating_tables_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      assert_not_last_admin: {
+        Args: { p_event_id: string; p_user_id: string };
+        Returns: undefined;
+      };
+      clean_display_name: { Args: { p_value: string }; Returns: string };
+      create_event: {
+        Args: { p_access_code: string; p_name: string; p_starts_at?: string };
+        Returns: string;
+      };
+      get_seating_plan: {
+        Args: { p_event_id: string };
+        Returns: {
+          capacity: number;
+          guest_id: string;
+          guest_name: string;
+          seat_number: number;
+          table_id: string;
+          table_name: string;
+        }[];
+      };
+      has_event_role: {
+        Args: { p_event_id: string; p_roles: Database["public"]["Enums"]["event_role"][] };
+        Returns: boolean;
+      };
+      is_event_member: { Args: { p_event_id: string }; Returns: boolean };
+      is_platform_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
+      join_event: {
+        Args: { p_access_code: string };
+        Returns: {
+          event_id: string;
+          event_name: string;
+          role: Database["public"]["Enums"]["event_role"];
+          starts_at: string;
+        }[];
+      };
+      my_event_role: {
+        Args: { p_event_id: string };
+        Returns: Database["public"]["Enums"]["event_role"];
+      };
+      normalize_access_code: { Args: { p_code: string }; Returns: string };
+      remove_member: { Args: { p_event_id: string; p_user_id: string }; Returns: undefined };
+      set_display_name: { Args: { p_display_name: string }; Returns: undefined };
+      set_member_role: {
+        Args: {
+          p_event_id: string;
+          p_role: Database["public"]["Enums"]["event_role"];
+          p_user_id: string;
+        };
+        Returns: undefined;
+      };
+      shares_event_with: { Args: { p_user_id: string }; Returns: boolean };
+      storage_path_event_id: { Args: { p_name: string }; Returns: string };
+      storage_path_owner: { Args: { p_name: string }; Returns: string };
+    };
+    Enums: {
+      event_role: "ADMIN" | "EDITOR" | "GUEST";
+      expense_status: "PLANNED" | "BOOKED" | "PAID";
+      guest_age_group: "ADULT" | "CHILD" | "INFANT";
+      guest_side: "BRIDE" | "GROOM" | "BOTH";
+      rsvp_status: "PENDING" | "ATTENDING" | "DECLINED";
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
+  };
+};
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">];
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R;
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R;
+      }
+      ? R
+      : never
+    : never;
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I;
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I;
+      }
+      ? I
+      : never
+    : never;
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U;
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U;
+      }
+      ? U
+      : never
+    : never;
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never) = never,
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never;
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never) = never,
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never;
+
+export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
+  public: {
+    Enums: {
+      event_role: ["ADMIN", "EDITOR", "GUEST"],
+      expense_status: ["PLANNED", "BOOKED", "PAID"],
+      guest_age_group: ["ADULT", "CHILD", "INFANT"],
+      guest_side: ["BRIDE", "GROOM", "BOTH"],
+      rsvp_status: ["PENDING", "ATTENDING", "DECLINED"],
+    },
+  },
+} as const;

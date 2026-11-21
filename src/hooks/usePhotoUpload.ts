@@ -18,14 +18,14 @@ const validateFile = (file: File): string | null => {
 
 type UsePhotoUploadOptions = {
   eventId: string | null
-  guestSessionId: string | null
+  userId: string | null
   onComplete?: () => Promise<void> | void
   onError?: (message: string) => void
 }
 
 export function usePhotoUpload({
   eventId,
-  guestSessionId,
+  userId,
   onComplete,
   onError,
 }: UsePhotoUploadOptions) {
@@ -34,7 +34,7 @@ export function usePhotoUpload({
 
   const uploadPhotos = useCallback(
     async (files: File[]) => {
-      if (!eventId || !guestSessionId) {
+      if (!eventId || !userId) {
         onError?.('Brak sesji użytkownika.')
         return
       }
@@ -50,7 +50,7 @@ export function usePhotoUpload({
 
       for (const [index, file] of files.entries()) {
         try {
-          await uploadPhotoWithThumbnail(eventId, guestSessionId, file)
+          await uploadPhotoWithThumbnail(eventId, userId, file)
 
           setProgress(Math.round(((index + 1) / files.length) * 100))
         } catch (err) {
@@ -65,7 +65,7 @@ export function usePhotoUpload({
       setUploading(false)
       await onComplete?.()
     },
-    [eventId, guestSessionId, onComplete, onError]
+    [eventId, userId, onComplete, onError]
   )
 
   return {

@@ -6,9 +6,8 @@ import { weddingContent } from '@/config/weddingContent'
 import { useEventSession } from '@/hooks/useEventSession'
 import { usePhotoUpload } from '@/hooks/usePhotoUpload'
 import { usePhotos } from '@/hooks/usePhotos'
-import { useUserRole } from '@/hooks/useUserRole'
 import { deletePhoto } from '@/lib/photosApi'
-import { canDeletePhotos } from '@/types/role'
+import { canManageAllPhotos } from '@/types/role'
 import type { Photo } from '@/types/photo'
 
 function App() {
@@ -18,6 +17,8 @@ function App() {
     nickname,
     setNickname,
     session,
+    initializing,
+    userId,
     hasNickname,
     error: sessionError,
     setError: setSessionError,
@@ -27,10 +28,8 @@ function App() {
     logout,
   } = useEventSession()
 
-  const { role } = useUserRole()
-
   const eventId = session?.id ?? null
-  const guestSessionId = session?.guest_session_id ?? null
+  const role = session?.role ?? null
 
   const {
     photos,
@@ -55,7 +54,7 @@ function App() {
 
   const { uploading, progress: uploadProgress, uploadPhotos } = usePhotoUpload({
     eventId,
-    guestSessionId,
+    userId,
     onComplete: loadPhotos,
     onError: handleUploadError,
   })
@@ -81,7 +80,18 @@ function App() {
     [loadPhotos, setSessionError]
   )
 
+  // Autor usuwa własne zdjęcia, EDITOR i ADMIN wszystkie w wydarzeniu.
+  const canDeletePhoto = useCallback(
+    (photo: Photo) => canManageAllPhotos(role) || (userId !== null && photo.uploaded_by === userId),
+    [role, userId]
+  )
+
   const error = sessionError ?? photosError
+
+  // Zapisane wydarzenie czeka na profil z bazy - bez tego mignąłby ekran pseudonimu.
+  if (initializing && session) {
+    return null
+  }
 
   if (hasNickname && session) {
     return (
@@ -93,7 +103,7 @@ function App() {
         uploading={uploading}
         uploadProgress={uploadProgress}
         error={error}
-        canDeletePhotos={canDeletePhotos(role)}
+        canDeletePhoto={canDeletePhoto}
         getPhotoUrl={getPhotoUrl}
         onUpload={uploadPhotos}
         onDeletePhoto={handleDeletePhoto}
