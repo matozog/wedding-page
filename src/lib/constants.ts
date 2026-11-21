@@ -10,6 +10,21 @@ export const ALLOWED_PHOTO_MIME_TYPES = [
   'image/heif',
 ] as const
 
+export type AllowedPhotoMimeType = (typeof ALLOWED_PHOTO_MIME_TYPES)[number]
+
+// Rozszerzenie pliku w Storage wynika z typu MIME, nie z nazwy pliku.
+export const PHOTO_FILE_EXTENSIONS: Record<AllowedPhotoMimeType, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/heic': 'heic',
+  'image/heif': 'heif',
+}
+
+// HEIC nie jest wymieniony celowo - iOS Safari konwertuje wtedy zdjęcia
+// do JPEG przy wyborze pliku. HEIC wgrany inną drogą nadal jest akceptowany.
+export const PHOTO_INPUT_ACCEPT = 'image/jpeg,image/png,image/webp'
+
 export const SESSION_STORAGE_KEY = 'wedding-page:session:v2' as const
 
 export const PENDING_GOOGLE_CODE_KEY = 'wedding-page:pending-google-code' as const

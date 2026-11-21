@@ -3,7 +3,7 @@ import { useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { weddingContent } from '@/config/weddingContent'
-import { ALLOWED_PHOTO_MIME_TYPES } from '@/lib/constants'
+import { PHOTO_INPUT_ACCEPT } from '@/lib/constants'
 
 type SiteHeaderProps = {
   eventName: string
@@ -48,7 +48,7 @@ export function SiteHeader({
           <input
             ref={fileInputRef}
             type="file"
-            accept={ALLOWED_PHOTO_MIME_TYPES.join(',')}
+            accept={PHOTO_INPUT_ACCEPT}
             multiple
             className="hidden"
             disabled={uploading}

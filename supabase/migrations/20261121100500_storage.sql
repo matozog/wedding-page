@@ -35,7 +35,7 @@ for insert
 to authenticated
 with check (
   bucket_id = 'photos'
-  and public.storage_path_owner(name) = auth.uid()::text
+  and public.storage_path_owner(name) = (select auth.uid())::text
   and public.is_event_member(public.storage_path_event_id(name))
 );
 
@@ -46,7 +46,7 @@ to authenticated
 using (
   bucket_id = 'photos'
   and (
-    public.storage_path_owner(name) = auth.uid()::text
+    public.storage_path_owner(name) = (select auth.uid())::text
     or public.has_event_role(
          public.storage_path_event_id(name),
          array['ADMIN', 'EDITOR']::public.event_role[]

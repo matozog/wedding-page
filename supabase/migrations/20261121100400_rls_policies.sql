@@ -1,17 +1,21 @@
 -- =============================================================================
 -- Row Level Security policies.
 -- Writes other than photos go through RPC functions (see *_rpc.sql).
+--
+-- Row-independent calls are wrapped in (select ...) so Postgres evaluates them
+-- once per query instead of once per row.
 -- =============================================================================
 
 -- profiles: own profile, people from the same events, everyone for platform admin.
+-- (Which columns are readable is limited by column grants in *_core_schema.sql.)
 create policy "Profiles visible to self, co-members and platform admins"
 on public.profiles
 for select
 to authenticated
 using (
-  id = auth.uid()
+  id = (select auth.uid())
+  or (select public.is_platform_admin())
   or public.shares_event_with(id)
-  or public.is_platform_admin()
 );
 
 -- events: members only.
@@ -41,12 +45,12 @@ on public.photos
 for insert
 to authenticated
 with check (
-  uploaded_by = auth.uid()
+  uploaded_by = (select auth.uid())
   and public.is_event_member(event_id)
-  and storage_path like event_id::text || '/' || auth.uid()::text || '/%'
+  and storage_path like event_id::text || '/' || (select auth.uid())::text || '/%'
   and (
     thumbnail_storage_path is null
-    or thumbnail_storage_path like event_id::text || '/' || auth.uid()::text || '/%'
+    or thumbnail_storage_path like event_id::text || '/' || (select auth.uid())::text || '/%'
   )
 );
 
@@ -56,7 +60,7 @@ on public.photos
 for delete
 to authenticated
 using (
-  uploaded_by = auth.uid()
+  uploaded_by = (select auth.uid())
   or public.has_event_role(event_id, array['ADMIN', 'EDITOR']::public.event_role[])
 );
 

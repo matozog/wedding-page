@@ -1,11 +1,15 @@
 import { useCallback, useState } from 'react'
 import { uploadPhotoWithThumbnail } from '../lib/photosApi'
-import { ALLOWED_PHOTO_MIME_TYPES, MAX_PHOTO_SIZE_BYTES } from '../lib/constants'
+import {
+  ALLOWED_PHOTO_MIME_TYPES,
+  MAX_PHOTO_SIZE_BYTES,
+  type AllowedPhotoMimeType,
+} from '../lib/constants'
 
 const MAX_PHOTO_SIZE_MB = Math.round(MAX_PHOTO_SIZE_BYTES / (1024 * 1024))
 
 const validateFile = (file: File): string | null => {
-  if (!ALLOWED_PHOTO_MIME_TYPES.includes(file.type as (typeof ALLOWED_PHOTO_MIME_TYPES)[number])) {
+  if (!ALLOWED_PHOTO_MIME_TYPES.includes(file.type as AllowedPhotoMimeType)) {
     return `${file.name}: nieobsługiwany format pliku.`
   }
 

@@ -3,11 +3,12 @@
 --
 -- Access:
 --   guest_groups, guests        ADMIN / EDITOR: full access
---   seating_tables              ADMIN / EDITOR: full access, other members: read
+--   seating_tables              ADMIN / EDITOR: full access (notes are internal)
 --   budget_categories,
 --   expenses, expense_payments  ADMIN only
---   Members (GUEST) see the seating plan with names only, via
---   get_seating_plan() - never the guests table itself (contacts, diet, notes).
+--   Members (GUEST) see the seating plan with table and guest names only, via
+--   get_seating_plan() - never the guests / seating_tables tables themselves
+--   (contacts, diet, internal notes).
 --
 -- Every child row carries event_id and references its parent through a
 -- composite (event_id, id) foreign key, so rows can never point at data from
@@ -215,12 +216,13 @@ to authenticated
 using      (public.has_event_role(event_id, array['ADMIN', 'EDITOR']::public.event_role[]))
 with check (public.has_event_role(event_id, array['ADMIN', 'EDITOR']::public.event_role[]));
 
--- seating tables: everyone in the event reads, ADMIN / EDITOR write
-create policy "Members can view seating tables"
+-- seating tables: ADMIN / EDITOR only (notes are internal). Other members get
+-- table names and capacity through get_seating_plan().
+create policy "Editors and admins can view seating tables"
 on public.seating_tables
 for select
 to authenticated
-using (public.is_event_member(event_id));
+using (public.has_event_role(event_id, array['ADMIN', 'EDITOR']::public.event_role[]));
 
 create policy "Editors and admins can add seating tables"
 on public.seating_tables

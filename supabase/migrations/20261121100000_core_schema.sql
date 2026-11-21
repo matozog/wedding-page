@@ -15,6 +15,14 @@
 --     SECURITY DEFINER RPC functions - tables expose no UPDATE to clients.
 -- =============================================================================
 
+-- Supabase grants EXECUTE on every new function to anon (and PostgreSQL to
+-- PUBLIC). Turn that off for functions created from now on - each migration
+-- grants EXECUTE explicitly to the roles that need it.
+-- PUBLIC comes from a global default, which a per-schema rule cannot revoke,
+-- hence two statements.
+alter default privileges revoke execute on functions from public;
+alter default privileges in schema public revoke execute on functions from anon;
+
 create type public.event_role as enum ('ADMIN', 'EDITOR', 'GUEST');
 
 -- Normalizes a display name: trims, caps at 40 chars, empty -> null.
@@ -138,8 +146,13 @@ revoke all on public.profiles, public.events, public.event_members,
               public.photos, public.join_attempts
   from anon, authenticated;
 
-grant select                 on public.profiles      to authenticated;
-grant select                 on public.events        to authenticated;
+-- Column-level: email and is_platform_admin stay private (co-members can read
+-- each other's profiles). The caller's own email comes from the auth session.
+grant select (id, display_name, avatar_url, is_anonymous, created_at, updated_at)
+  on public.profiles to authenticated;
+-- access_code_hash never leaves the database.
+grant select (id, name, starts_at, created_by, created_at)
+  on public.events to authenticated;
 grant select                 on public.event_members to authenticated;
 grant select, insert, delete on public.photos        to authenticated;
 -- join_attempts: no client access at all (only join_event() touches it).
