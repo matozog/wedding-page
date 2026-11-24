@@ -4,10 +4,13 @@
 --
 -- Test event: code TEST123 (case-insensitive).
 --
--- To become platform admin locally: open the app, enter the code, set a
--- nickname, then in Studio (http://127.0.0.1:54323) -> SQL Editor run:
---   update public.profiles set is_platform_admin = true where id = '<your user id>';
--- (your user id: Authentication -> Users)
+-- To become platform admin locally: configure Google sign-in (README ->
+-- "Lokalne logowanie przez Google"), open the app, enter the code, choose
+-- "Zaloguj się przez Google", then in Studio (http://127.0.0.1:54323) ->
+-- SQL Editor run:
+--   update public.profiles set is_platform_admin = true where email = '<your google email>';
+-- Use a Google account, not an anonymous session - an anonymous session is
+-- lost when browser data is cleared. `db reset` wipes users, so repeat after it.
 -- =============================================================================
 
 insert into public.events (id, name, starts_at, access_code_hash)

@@ -29,10 +29,32 @@ Pierwszy start pobiera obrazy Dockera i trwa kilka minut.
 
 Po zamknięciu Vite Supabase dalej działa — zatrzymasz go przez `npm run db:stop`.
 
-Lokalnie działa logowanie anonimowe. Logowanie przez Google wymaga dodatkowej konfiguracji
-`[auth.external.google]` w `supabase/config.toml`.
-
 Adresy lokalnego stacku: API http://127.0.0.1:54321, Studio http://127.0.0.1:54323.
+
+## Lokalne logowanie przez Google
+
+Logowanie anonimowe działa od razu. Google jest włączone w `supabase/config.toml`
+(`[auth.external.google]`), ale wymaga własnego klienta OAuth:
+
+1. W [Google Cloud Console](https://console.cloud.google.com/) → Google Auth Platform → Clients
+   utwórz klienta OAuth do pracy lokalnej (typ **Web application**), osobnego niż produkcyjny:
+   - Authorized JavaScript origins: `http://localhost:5173`, `http://127.0.0.1:5173`
+   - Authorized redirect URIs: `http://127.0.0.1:54321/auth/v1/callback`
+
+   W trybie *Testing* zalogują się tylko konta dodane w **Audience → Test users**.
+2. Skopiuj `supabase/.env.example` do `supabase/.env` (ignorowany przez git) i wpisz Client ID
+   oraz Client secret. Nie wpisuj ich do `.env*.local` ani zmiennych `VITE_*`.
+3. Zrestartuj stack, żeby wczytał konfigurację — `dev:local` nie restartuje działającego Supabase:
+
+   ```sh
+   npm run db:stop
+   npm run dev:local
+   ```
+
+4. Otwórz http://localhost:5173, wpisz kod `TEST123` i wybierz „Zaloguj się przez Google”.
+
+Aplikacja musi działać na porcie 5173 — jeśli Vite wybierze inny port (bo 5173 jest zajęty),
+Supabase odrzuci powrót z Google.
 
 ## Deploy
 
