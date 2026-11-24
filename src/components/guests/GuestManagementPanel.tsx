@@ -375,10 +375,11 @@ export function GuestManagementPanel({ eventId, canEdit }: GuestManagementPanelP
       {groupDialog !== undefined && (
         <GroupDialog
           group={groupDialog}
+          members={groupDialog ? guests.filter((guest) => guest.group_id === groupDialog.id) : []}
           onClose={() => setGroupDialog(undefined)}
-          onSave={async (input) => {
+          onSave={async (input, applyToMembers) => {
             if (groupDialog) {
-              await editGroup(groupDialog.id, input)
+              await editGroup(groupDialog.id, input, applyToMembers)
             } else {
               await addGroup(input)
             }

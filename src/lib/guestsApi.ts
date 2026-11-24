@@ -126,6 +126,31 @@ export const updateGuestGroup = async (id: string, input: GuestGroupInput): Prom
   return requireRow(data)
 }
 
+// Ustawia "od kogo" wszystkim osobom z grupy - poza samą osobą zapraszającą,
+// jeśli należy do tej grupy (nie może wskazać siebie). Zwraca zmienione wiersze.
+export const setGroupMembersInviter = async (
+  groupId: string,
+  invitedBy: string | null,
+  jointly: boolean
+): Promise<Guest[]> => {
+  let query = supabase
+    .from('guests')
+    .update({ invited_by_guest_id: invitedBy, invited_jointly: jointly })
+    .eq('group_id', groupId)
+
+  if (invitedBy) {
+    query = query.neq('id', invitedBy)
+  }
+
+  const { data, error } = await query.select(GUEST_SELECT_FIELDS)
+
+  if (error) {
+    throw error
+  }
+
+  return data ?? []
+}
+
 // Grupa razem z osobami (opcjonalnie) w jednej transakcji. Bez osób - goście
 // zostają na liście, bez grupy (FK on delete set null).
 export const deleteGuestGroup = async (id: string, deleteGuests: boolean): Promise<void> => {

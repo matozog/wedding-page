@@ -1,4 +1,4 @@
-import { useId, useRef } from 'react'
+import { useEffect, useId, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import {
@@ -13,12 +13,15 @@ import { ErrorMessage } from '@/components/ui/ErrorMessage'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
+import { countPl } from '@/lib/plural'
 import { cn } from '@/lib/utils'
 import {
   GUEST_LIMITS,
   type GuestGroup,
   fromInviterValue,
   groupInviterValue,
+  guestInviterValue,
+  type Guest,
   type GuestGroupInput,
 } from '@/types/guest'
 import { useInviterOptions } from './inviterOptionsContext'
@@ -28,30 +31,38 @@ type GroupFormValues = {
   address: string
   // '' | JOINT_INVITER | id osoby zapraszającej
   inviter: string
+  // Po zmianie "od kogo": ustaw je też osobom, które już są w grupie.
+  apply_to_members: boolean
 }
 
 type GroupDialogProps = {
   // null = nowa grupa
   group: GuestGroup | null
+  // Osoby w grupie (edycja istniejącej grupy).
+  members: readonly Guest[]
   onClose: () => void
-  onSave: (input: GuestGroupInput) => Promise<void>
+  onSave: (input: GuestGroupInput, applyToMembers: boolean) => Promise<void>
 }
 
 // Montowany tylko na czas edycji - wartości początkowe biorą się z grupy.
-export function GroupDialog({ group, onClose, onSave }: GroupDialogProps) {
+export function GroupDialog({ group, members, onClose, onSave }: GroupDialogProps) {
   const id = useId()
   const busyRef = useRef(false)
   const inviters = useInviterOptions()
+  const initialInviter = group ? groupInviterValue(group) : ''
   const {
     register,
     handleSubmit,
     setError,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<GroupFormValues>({
     defaultValues: {
       name: group?.name ?? '',
       address: group?.address ?? '',
-      inviter: group ? groupInviterValue(group) : '',
+      inviter: initialInviter,
+      apply_to_members: false,
     },
     mode: 'onTouched',
   })
@@ -62,20 +73,36 @@ export function GroupDialog({ group, onClose, onSave }: GroupDialogProps) {
 
     try {
       const { invitedBy, jointly } = fromInviterValue(values.inviter)
-      await onSave({
-        name: values.name.trim(),
-        address: values.address.trim() || null,
-        default_inviter_id: invitedBy,
-        default_invited_jointly: jointly,
-      })
+      await onSave(
+        {
+          name: values.name.trim(),
+          address: values.address.trim() || null,
+          default_inviter_id: invitedBy,
+          default_invited_jointly: jointly,
+        },
+        differingCount > 0 && values.apply_to_members
+      )
       onClose()
     } catch (err) {
       console.error(err)
-      setError('root', { message: 'Nie udało się zapisać grupy.' })
+      // Ponowny zapis jest bezpieczny (te same wartości grupy i osób).
+      setError('root', { message: 'Nie udało się zapisać zmian. Spróbuj ponownie.' })
     } finally {
       busyRef.current = false
     }
   })
+
+  // Osoby z grupy, którym "od kogo" różni się od wybranego dla grupy
+  // (bez samej osoby zapraszającej - nie może wskazać siebie).
+  const selectedInviter = watch('inviter')
+  const differingCount = members.filter(
+    (guest) => guest.id !== selectedInviter && guestInviterValue(guest) !== selectedInviter
+  ).length
+  // Zmiana "od kogo" w tym oknie zaznacza przeniesienie na osoby z grupy;
+  // przy samej zmianie nazwy / adresu zostaje odznaczone.
+  useEffect(() => {
+    setValue('apply_to_members', selectedInviter !== initialInviter)
+  }, [initialInviter, selectedInviter, setValue])
 
   const nameError = errors.name?.message
   const addressError = errors.address?.message
@@ -155,6 +182,17 @@ export function GroupDialog({ group, onClose, onSave }: GroupDialogProps) {
               <p className="text-xs text-muted-foreground">
                 Domyślna wartość dla nowych osób dodawanych do grupy.
               </p>
+              {differingCount > 0 && (
+                <label className="mt-1 flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    className="size-4 accent-primary"
+                    {...register('apply_to_members')}
+                  />
+                  Ustaw także dla {countPl(differingCount, 'osoby', 'osób', 'osób')} z grupy, które
+                  mają inne „od kogo”
+                </label>
+              )}
             </div>
           )}
 

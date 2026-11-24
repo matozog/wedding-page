@@ -5,6 +5,7 @@ import {
   fetchGuestList,
   insertGuest,
   insertGuestGroup,
+  setGroupMembersInviter,
   updateGuest,
   updateGuestGroup,
 } from '../lib/guestsApi'
@@ -102,11 +103,26 @@ export function useGuests(eventId: string | null) {
     [requireEventId]
   )
 
-  const editGroup = useCallback(async (id: string, input: GuestGroupInput) => {
-    const group = await updateGuestGroup(id, input)
-    setGroups((current) => current.map((item) => (item.id === id ? group : item)))
-    return group
-  }, [])
+  // applyToMembers: "od kogo" grupy trafia też do osób, które już w niej są.
+  const editGroup = useCallback(
+    async (id: string, input: GuestGroupInput, applyToMembers = false) => {
+      const group = await updateGuestGroup(id, input)
+      setGroups((current) => current.map((item) => (item.id === id ? group : item)))
+
+      if (applyToMembers) {
+        const updated = await setGroupMembersInviter(
+          id,
+          input.default_inviter_id,
+          input.default_invited_jointly
+        )
+        const byId = new Map(updated.map((guest) => [guest.id, guest]))
+        setGuests((current) => current.map((item) => byId.get(item.id) ?? item))
+      }
+
+      return group
+    },
+    []
+  )
 
   const removeGroup = useCallback(async (id: string, withGuests: boolean) => {
     await deleteGuestGroup(id, withGuests)
