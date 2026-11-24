@@ -17,15 +17,17 @@ import { cn } from '@/lib/utils'
 import {
   GUEST_LIMITS,
   type GuestGroup,
+  fromInviterValue,
+  groupInviterValue,
   type GuestGroupInput,
-  type GuestSide,
 } from '@/types/guest'
-import { useSideOptions } from './sideOptionsContext'
+import { useInviterOptions } from './inviterOptionsContext'
 
 type GroupFormValues = {
   name: string
   address: string
-  side: GuestSide | ''
+  // '' | JOINT_INVITER | id osoby zapraszającej
+  inviter: string
 }
 
 type GroupDialogProps = {
@@ -39,7 +41,7 @@ type GroupDialogProps = {
 export function GroupDialog({ group, onClose, onSave }: GroupDialogProps) {
   const id = useId()
   const busyRef = useRef(false)
-  const sides = useSideOptions()
+  const inviters = useInviterOptions()
   const {
     register,
     handleSubmit,
@@ -49,7 +51,7 @@ export function GroupDialog({ group, onClose, onSave }: GroupDialogProps) {
     defaultValues: {
       name: group?.name ?? '',
       address: group?.address ?? '',
-      side: group?.side ?? '',
+      inviter: group ? groupInviterValue(group) : '',
     },
     mode: 'onTouched',
   })
@@ -59,10 +61,12 @@ export function GroupDialog({ group, onClose, onSave }: GroupDialogProps) {
     busyRef.current = true
 
     try {
+      const { invitedBy, jointly } = fromInviterValue(values.inviter)
       await onSave({
         name: values.name.trim(),
         address: values.address.trim() || null,
-        side: values.side || null,
+        default_inviter_id: invitedBy,
+        default_invited_jointly: jointly,
       })
       onClose()
     } catch (err) {
@@ -137,21 +141,21 @@ export function GroupDialog({ group, onClose, onSave }: GroupDialogProps) {
             )}
           </div>
 
-          {sides.enabled && (
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor={`${id}-side`}>Od kogo</Label>
-            <NativeSelect id={`${id}-side`} {...register('side')}>
-              <option value="">—</option>
-              {sides.options.map(({ value, label }) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </NativeSelect>
-            <p className="text-xs text-muted-foreground">
-              Domyślna wartość dla nowych osób dodawanych do grupy.
-            </p>
-          </div>
+          {inviters.enabled && (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor={`${id}-inviter`}>Od kogo</Label>
+              <NativeSelect id={`${id}-inviter`} {...register('inviter')}>
+                <option value="">—</option>
+                {inviters.options.map(({ value, label }) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </NativeSelect>
+              <p className="text-xs text-muted-foreground">
+                Domyślna wartość dla nowych osób dodawanych do grupy.
+              </p>
+            </div>
           )}
 
           {errors.root?.message && (

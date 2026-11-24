@@ -11,8 +11,8 @@ import {
   type GuestSortKey,
 } from '@/lib/guestList'
 import { cn } from '@/lib/utils'
-import { ATTENDANCE_OPTIONS, type Attendance, type GuestSide } from '@/types/guest'
-import { useSideOptions } from './sideOptionsContext'
+import { ATTENDANCE_OPTIONS, NO_INVITER, type Attendance } from '@/types/guest'
+import { useInviterOptions } from './inviterOptionsContext'
 
 export function GuestSearch({
   value,
@@ -49,6 +49,8 @@ export function GuestSearch({
 type GuestToolbarProps = {
   filters: GuestFilters
   groupView: boolean
+  // Bez żadnej grupy przełącznik widoku grup nie ma sensu.
+  hasGroups: boolean
   sort: GuestSort
   // Desktop: wszystko w jednej linii razem z wyszukiwarką. Wąski ekran:
   // wyszukiwarka osobno (przyklejona), sortowanie z listy (brak nagłówków).
@@ -68,6 +70,7 @@ type GuestToolbarProps = {
 export function GuestToolbar({
   filters,
   groupView,
+  hasGroups,
   sort,
   compact,
   canEdit,
@@ -82,8 +85,8 @@ export function GuestToolbar({
   onAddGroup,
 }: GuestToolbarProps) {
   const id = useId()
-  const sides = useSideOptions()
-  const hasFilters = filters.search !== '' || filters.attendance !== '' || filters.side !== ''
+  const inviters = useInviterOptions()
+  const hasFilters = filters.search !== '' || filters.attendance !== '' || filters.inviter !== ''
   const selectWidth = compact ? 'w-[calc(50%-0.25rem)]' : 'w-44'
 
   return (
@@ -116,30 +119,29 @@ export function GuestToolbar({
         </NativeSelect>
       </div>
 
-      {sides.enabled && (
+      {inviters.enabled && (
         <div className={selectWidth}>
-          <label htmlFor={`${id}-side`} className="sr-only">
+          <label htmlFor={`${id}-inviter`} className="sr-only">
             Filtr: od kogo
           </label>
           <NativeSelect
-            id={`${id}-side`}
-            value={filters.side}
-            onChange={(event) =>
-              onFiltersChange({ ...filters, side: event.target.value as GuestSide | '' })
-            }
+            id={`${id}-inviter`}
+            value={filters.inviter}
+            onChange={(event) => onFiltersChange({ ...filters, inviter: event.target.value })}
           >
             <option value="">Od wszystkich</option>
-            {sides.options.map(({ value, label }) => (
+            {inviters.options.map(({ value, label }) => (
               <option key={value} value={value}>
-                {label}
+                Od: {label}
               </option>
             ))}
+            <option value={NO_INVITER}>Bez przypisania</option>
           </NativeSelect>
         </div>
       )}
 
       {compact && (
-        <div className={sides.enabled ? 'w-full' : selectWidth}>
+        <div className={inviters.enabled ? 'w-full' : selectWidth}>
           <label htmlFor={`${id}-sort`} className="sr-only">
             Sortowanie
           </label>
@@ -155,7 +157,7 @@ export function GuestToolbar({
             }}
           >
             {(Object.keys(SORT_LABELS) as GuestSortKey[])
-              .filter((key) => key !== 'side' || sides.enabled)
+              .filter((key) => (key !== 'inviter' || inviters.enabled) && (key !== 'group' || hasGroups))
               .flatMap((key) => [
                 <option key={`${key}:asc`} value={`${key}:asc`}>
                   Sortuj: {SORT_LABELS[key]} ↑
@@ -175,36 +177,38 @@ export function GuestToolbar({
         </Button>
       )}
 
-      <div className="flex items-center gap-2 px-1 text-sm">
-        <button
-          id={`${id}-group-view`}
-          type="button"
-          role="switch"
-          aria-checked={groupView}
-          aria-labelledby={`${id}-group-view-label`}
-          onClick={() => onGroupViewChange(!groupView)}
-          className={cn(
-            'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-            groupView ? 'bg-primary' : 'bg-input'
-          )}
-        >
-          <span
+      {hasGroups && (
+        <div className="flex items-center gap-2 px-1 text-sm">
+          <button
+            id={`${id}-group-view`}
+            type="button"
+            role="switch"
+            aria-checked={groupView}
+            aria-labelledby={`${id}-group-view-label`}
+            onClick={() => onGroupViewChange(!groupView)}
             className={cn(
-              'block size-5 rounded-full bg-background shadow transition-transform',
-              groupView ? 'translate-x-5' : 'translate-x-0'
+              'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+              groupView ? 'bg-primary' : 'bg-input'
             )}
-          />
-        </button>
-        <label
-          id={`${id}-group-view-label`}
-          htmlFor={`${id}-group-view`}
-          className="cursor-pointer whitespace-nowrap"
-        >
-          Widok grup
-        </label>
-      </div>
+          >
+            <span
+              className={cn(
+                'block size-5 rounded-full bg-background shadow transition-transform',
+                groupView ? 'translate-x-5' : 'translate-x-0'
+              )}
+            />
+          </button>
+          <label
+            id={`${id}-group-view-label`}
+            htmlFor={`${id}-group-view`}
+            className="cursor-pointer whitespace-nowrap"
+          >
+            Widok grup
+          </label>
+        </div>
+      )}
 
-      {groupView && (
+      {groupView && hasGroups && (
         <div className="flex">
           <Button
             type="button"

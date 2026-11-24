@@ -12,10 +12,11 @@ import {
   LastNameField,
   PhoneField,
   PlusOneField,
-  SideField,
+  InviterField,
+  InviterFlagField,
 } from './guestFormFields'
 import { useGuestForm, useGuestSubmit, type GuestSaveHandlers } from './guestFormModel'
-import { useSideOptions } from './sideOptionsContext'
+import { useInviterOptions } from './inviterOptionsContext'
 
 type GuestEditRowProps = GuestSaveHandlers & {
   guest: Guest | null
@@ -44,7 +45,8 @@ export function GuestEditRow({
   onSave,
 }: GuestEditRowProps) {
   const idPrefix = useId()
-  const sides = useSideOptions()
+  const inviters = useInviterOptions()
+  const guestId = guest?.id ?? null
   const formId = `${idPrefix}-form`
   const form = useGuestForm({ guest, defaultGroupId, groups, onDirtyChange })
   const { isSubmitting, errors } = form.formState
@@ -93,9 +95,9 @@ export function GuestEditRow({
         <TableCell className="min-w-36 align-top">
           <PhoneField {...fieldProps} />
         </TableCell>
-        {sides.enabled && (
-          <TableCell className="min-w-32 align-top">
-            <SideField {...fieldProps} />
+        {inviters.enabled && (
+          <TableCell className="min-w-36 align-top">
+            <InviterField {...fieldProps} guestId={guestId} />
           </TableCell>
         )}
         <TableCell className="min-w-40 align-top">
@@ -147,6 +149,7 @@ export function GuestEditRow({
           <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
             <AgeGroupField {...fieldProps} />
             <PlusOneField {...fieldProps} />
+            <InviterFlagField {...fieldProps} guestId={guestId} />
             {!showGroupColumn && <GroupField {...fieldProps} groups={groups} showLabel />}
             {errors.root?.message && (
               <p role="alert" className="ml-auto self-center text-sm text-destructive">

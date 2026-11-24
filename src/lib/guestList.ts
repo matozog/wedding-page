@@ -5,7 +5,8 @@ import {
   type Guest,
   type GuestAgeGroup,
   type GuestGroup,
-  type GuestSide,
+  NO_INVITER,
+  guestInviterValue,
 } from '../types/guest'
 
 // -----------------------------------------------------------------------------
@@ -55,10 +56,11 @@ export const computeGuestStats = (
 export type GuestFilters = {
   search: string
   attendance: Attendance | ''
-  side: GuestSide | ''
+  // '' | NO_INVITER | JOINT_INVITER | id osoby zapraszającej
+  inviter: string
 }
 
-export const EMPTY_FILTERS: GuestFilters = { search: '', attendance: '', side: '' }
+export const EMPTY_FILTERS: GuestFilters = { search: '', attendance: '', inviter: '' }
 
 // Wyszukiwanie bez wielkości liter i polskich znaków ("zolw" znajdzie "Żółw").
 const normalize = (value: string) =>
@@ -78,7 +80,10 @@ export const filterGuests = (
 
   return guests.filter((guest) => {
     if (filters.attendance && guest.attendance !== filters.attendance) return false
-    if (filters.side && guest.side !== filters.side) return false
+    if (filters.inviter) {
+      const value = guestInviterValue(guest)
+      if (filters.inviter === NO_INVITER ? value !== '' : value !== filters.inviter) return false
+    }
     if (terms.length === 0) return true
 
     const group = guest.group_id ? groupsById.get(guest.group_id) : undefined
@@ -100,7 +105,7 @@ export type GuestSortKey =
   | 'last_name'
   | 'address'
   | 'phone'
-  | 'side'
+  | 'inviter'
   | 'attendance'
   | 'group'
 
@@ -110,7 +115,7 @@ export const SORT_LABELS: Record<GuestSortKey, string> = {
   first_name: 'Imię',
   group: 'Grupa',
   attendance: 'Obecność',
-  side: 'Od kogo',
+  inviter: 'Od kogo',
   address: 'Adres',
   phone: 'Telefon',
 }
@@ -146,7 +151,7 @@ export const sortGuests = (
   guests: readonly Guest[],
   sort: GuestSort,
   groupsById: ReadonlyMap<string, GuestGroup>,
-  sideLabel: (side: GuestSide | null) => string | null
+  inviterLabel: (value: string) => string | null
 ): Guest[] => {
   const sign = sort.direction === 'asc' ? 1 : -1
 
@@ -160,8 +165,12 @@ export const sortGuests = (
         return compareText(a.phone, b.phone, sign)
       case 'address':
         return compareText(effectiveAddress(a, groupsById), effectiveAddress(b, groupsById), sign)
-      case 'side':
-        return compareText(sideLabel(a.side), sideLabel(b.side), sign)
+      case 'inviter':
+        return compareText(
+          inviterLabel(guestInviterValue(a)),
+          inviterLabel(guestInviterValue(b)),
+          sign
+        )
       case 'attendance':
         return (ATTENDANCE_ORDER[a.attendance] - ATTENDANCE_ORDER[b.attendance]) * sign
       case 'group': {

@@ -8,7 +8,7 @@ import {
   updateGuest,
   updateGuestGroup,
 } from '../lib/guestsApi'
-import type { Guest, GuestGroup, GuestGroupInput, GuestInput, HostLabels } from '../types/guest'
+import type { Guest, GuestGroup, GuestGroupInput, GuestInput } from '../types/guest'
 
 // Lista gości i grup wydarzenia. Zapis aktualizuje stan lokalny wierszem
 // zwróconym przez bazę (bez ponownego pobierania całej listy). Błędy zapisu
@@ -16,7 +16,6 @@ import type { Guest, GuestGroup, GuestGroupInput, GuestInput, HostLabels } from 
 export function useGuests(eventId: string | null) {
   const [guests, setGuests] = useState<Guest[]>([])
   const [groups, setGroups] = useState<GuestGroup[]>([])
-  const [hostLabels, setHostLabels] = useState<HostLabels>({ hostA: null, hostB: null })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -32,7 +31,6 @@ export function useGuests(eventId: string | null) {
       const data = await fetchGuestList(eventId)
       setGuests(data.guests)
       setGroups(data.groups)
-      setHostLabels(data.hostLabels)
     } catch (err) {
       console.error('Guest list error:', err)
       setError('Nie udało się pobrać listy gości.')
@@ -61,16 +59,39 @@ export function useGuests(eventId: string | null) {
     [requireEventId]
   )
 
-  const editGuest = useCallback(async (id: string, input: GuestInput) => {
-    const guest = await updateGuest(id, input)
-    setGuests((current) => current.map((item) => (item.id === id ? guest : item)))
-    return guest
+  // Osoba przestała być zapraszającą albo zniknęła - baza zdjęła odwołania
+  // do niej (goście i domyślne "od kogo" grup), lokalnie robimy to samo.
+  const releaseInviter = useCallback((id: string) => {
+    setGuests((current) =>
+      current.map((item) =>
+        item.invited_by_guest_id === id ? { ...item, invited_by_guest_id: null } : item
+      )
+    )
+    setGroups((current) =>
+      current.map((item) =>
+        item.default_inviter_id === id ? { ...item, default_inviter_id: null } : item
+      )
+    )
   }, [])
 
-  const removeGuest = useCallback(async (id: string) => {
-    await deleteGuest(id)
-    setGuests((current) => current.filter((item) => item.id !== id))
-  }, [])
+  const editGuest = useCallback(
+    async (id: string, input: GuestInput) => {
+      const guest = await updateGuest(id, input)
+      setGuests((current) => current.map((item) => (item.id === id ? guest : item)))
+      if (!guest.is_inviter) releaseInviter(id)
+      return guest
+    },
+    [releaseInviter]
+  )
+
+  const removeGuest = useCallback(
+    async (id: string) => {
+      await deleteGuest(id)
+      setGuests((current) => current.filter((item) => item.id !== id))
+      releaseInviter(id)
+    },
+    [releaseInviter]
+  )
 
   const addGroup = useCallback(
     async (input: GuestGroupInput) => {
@@ -100,7 +121,6 @@ export function useGuests(eventId: string | null) {
   return {
     guests,
     groups,
-    hostLabels,
     loading,
     error,
     reload: load,

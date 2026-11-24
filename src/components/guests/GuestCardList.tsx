@@ -4,13 +4,14 @@ import { countPl } from '@/lib/plural'
 import {
   AGE_GROUP_LABELS,
   guestDisplayName,
+  guestInviterValue,
   type Guest,
   type GuestGroup,
 } from '@/types/guest'
 import { AttendanceBadge } from './AttendanceBadge'
-import { AddressText, type GuestListActions } from './GuestTable'
+import { AddressText, InviterBadge, type GuestListActions } from './GuestTable'
 import { sectionTitle, type GuestSection } from './guestSections'
-import { useSideOptions } from './sideOptionsContext'
+import { useInviterOptions } from './inviterOptionsContext'
 
 type GuestCardListProps = GuestListActions & {
   sections: GuestSection[]
@@ -28,6 +29,7 @@ function GuestCard({
   canEdit,
   onEdit,
   onDelete,
+  onShowInvitees,
 }: {
   guest: Guest
   groupView: boolean
@@ -35,12 +37,14 @@ function GuestCard({
   canEdit: boolean
   onEdit: (guest: Guest) => void
   onDelete: (guest: Guest) => void
+  onShowInvitees: (inviterId: string) => void
 }) {
-  const sides = useSideOptions()
+  const inviters = useInviterOptions()
+  const inviterLabel = inviters.labelOf(guestInviterValue(guest))
   const name = guestDisplayName(guest)
   const group = guest.group_id ? groupsById.get(guest.group_id) : undefined
   const meta = [
-    sides.labelOf(guest.side),
+    inviterLabel && `od: ${inviterLabel}`,
     guest.age_group !== 'ADULT' && AGE_GROUP_LABELS[guest.age_group],
     guest.is_plus_one && guest.first_name && 'osoba towarzysząca',
     !groupView && group?.name,
@@ -52,6 +56,11 @@ function GuestCard({
         <div className="min-w-0">
           <p className="font-medium text-foreground">{name}</p>
           {meta.length > 0 && <p className="text-xs text-muted-foreground">{meta.join(' · ')}</p>}
+          {guest.is_inviter && (
+            <div className="mt-1">
+              <InviterBadge guest={guest} onShowInvitees={onShowInvitees} />
+            </div>
+          )}
         </div>
         <AttendanceBadge value={guest.attendance} className="shrink-0" />
       </div>
@@ -116,6 +125,7 @@ export function GuestCardList({
           canEdit={canEdit}
           onEdit={actions.onEdit}
           onDelete={actions.onDelete}
+          onShowInvitees={actions.onShowInvitees}
         />
       ))}
     </ul>

@@ -17,7 +17,7 @@ import {
 } from '@/lib/guestList'
 import { countPl } from '@/lib/plural'
 import {
-  buildSideOptions,
+  buildInviterOptions,
   guestDisplayName,
   type Guest,
   type GuestGroup,
@@ -31,7 +31,7 @@ import { GuestStats } from './GuestStats'
 import { GuestTable, type GuestListEditing } from './GuestTable'
 import { GuestSearch, GuestToolbar } from './GuestToolbar'
 import { UNGROUPED_KEY, type GuestSection } from './guestSections'
-import { SideOptionsContext } from './sideOptionsContext'
+import { InviterOptionsContext } from './inviterOptionsContext'
 
 const GROUP_VIEW_KEY = 'guest-list-group-view'
 
@@ -61,7 +61,6 @@ export function GuestManagementPanel({ eventId, canEdit }: GuestManagementPanelP
   const {
     guests,
     groups,
-    hostLabels,
     loading,
     error,
     reload,
@@ -78,7 +77,7 @@ export function GuestManagementPanel({ eventId, canEdit }: GuestManagementPanelP
 
   const [filters, setFilters] = useState<GuestFilters>(EMPTY_FILTERS)
   const [sort, setSort] = useState<GuestSort>(DEFAULT_SORT)
-  const [groupView, setGroupView] = useState(readGroupView)
+  const [groupViewPreference, setGroupView] = useState(readGroupView)
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set())
 
   const [editing, setEditing] = useState<GuestListEditing>(null)
@@ -92,16 +91,20 @@ export function GuestManagementPanel({ eventId, canEdit }: GuestManagementPanelP
   // undefined = zamknięte, null = nowa grupa
   const [groupDialog, setGroupDialog] = useState<GuestGroup | null | undefined>(undefined)
 
-  const sideOptions = useMemo(() => buildSideOptions(hostLabels), [hostLabels])
+  const inviterOptions = useMemo(() => buildInviterOptions(guests), [guests])
+  // Bez żadnej grupy lista jest zawsze płaska (bez sekcji "Bez grupy",
+  // kolumny "Grupa" i przełącznika widoku).
+  const hasGroups = groups.length > 0
+  const groupView = groupViewPreference && hasGroups
   const groupsById = useMemo(() => new Map(groups.map((group) => [group.id, group])), [groups])
   const sortedGroups = useMemo(() => sortGroups(groups), [groups])
   const stats = useMemo(() => computeGuestStats(guests), [guests])
   const filtered = useMemo(() => filterGuests(guests, filters, groupsById), [guests, filters, groupsById])
   const sorted = useMemo(
-    () => sortGuests(filtered, sort, groupsById, sideOptions.labelOf),
-    [filtered, sort, groupsById, sideOptions]
+    () => sortGuests(filtered, sort, groupsById, inviterOptions.labelOf),
+    [filtered, sort, groupsById, inviterOptions]
   )
-  const hasFilters = filters.search !== '' || filters.attendance !== '' || filters.side !== ''
+  const hasFilters = filters.search !== '' || filters.attendance !== '' || filters.inviter !== ''
 
   const sections = useMemo<GuestSection[]>(() => {
     if (!groupView) {
@@ -213,7 +216,7 @@ export function GuestManagementPanel({ eventId, canEdit }: GuestManagementPanelP
       guest={guest}
       defaultGroupId={defaultGroupId}
       groups={sortedGroups}
-      showGroupColumn={!groupView}
+      showGroupColumn={!groupView && hasGroups}
       columnCount={columnCount}
       onCancel={cancelEditing}
       onDirtyChange={handleDirtyChange}
@@ -231,6 +234,7 @@ export function GuestManagementPanel({ eventId, canEdit }: GuestManagementPanelP
       setDeleteGroupMembers(false)
       setGroupToDelete(group)
     },
+    onShowInvitees: (inviterId: string) => setFilters((current) => ({ ...current, inviter: inviterId })),
     onToggleCollapsed: (key: string) =>
       setCollapsed((current) => {
         const next = new Set(current)
@@ -258,7 +262,7 @@ export function GuestManagementPanel({ eventId, canEdit }: GuestManagementPanelP
   // (min. 360 px - niżej przewija się cała strona). Wąski ekran: karty
   // przewijają się ze stroną, wyszukiwarka zostaje przyklejona u góry.
   return (
-    <SideOptionsContext value={sideOptions}>
+    <InviterOptionsContext value={inviterOptions}>
       <section aria-labelledby="guests-title" className="flex flex-col gap-3 lg:min-h-0 lg:flex-1">
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
           <h1 id="guests-title" className="font-serif text-3xl leading-tight text-foreground">
@@ -289,7 +293,9 @@ export function GuestManagementPanel({ eventId, canEdit }: GuestManagementPanelP
             <GuestStats
               stats={stats}
               activeAttendance={filters.attendance}
+              activeInviter={filters.inviter}
               onSelectAttendance={(attendance) => setFilters((current) => ({ ...current, attendance }))}
+              onSelectInviter={(inviter) => setFilters((current) => ({ ...current, inviter }))}
             />
 
             {!isDesktop && (
@@ -304,6 +310,7 @@ export function GuestManagementPanel({ eventId, canEdit }: GuestManagementPanelP
             <GuestToolbar
               filters={filters}
               groupView={groupView}
+              hasGroups={hasGroups}
               sort={sort}
               compact={!isDesktop}
               canEdit={canEdit}
@@ -325,6 +332,7 @@ export function GuestManagementPanel({ eventId, canEdit }: GuestManagementPanelP
                 <GuestTable
                   sections={sections}
                   groupView={groupView}
+                  showGroupColumn={!groupView && hasGroups}
                   groupsById={groupsById}
                   sort={sort}
                   canEdit={canEdit}
@@ -396,7 +404,15 @@ export function GuestManagementPanel({ eventId, canEdit }: GuestManagementPanelP
         title="Usunąć gościa?"
         description={
           guestToDelete
-            ? `${guestDisplayName(guestToDelete)} zniknie z listy gości i z planu stołów. Tej operacji nie można cofnąć.`
+            ? [
+                `${guestDisplayName(guestToDelete)} zniknie z listy gości i z planu stołów.`,
+                guestToDelete.is_inviter && inviterOptions.countOf(guestToDelete.id) > 0
+                  ? `${countPl(inviterOptions.countOf(guestToDelete.id), 'osoba', 'osoby', 'osób')} od tej osoby zostanie bez przypisania „od kogo”.`
+                  : null,
+                'Tej operacji nie można cofnąć.',
+              ]
+                .filter(Boolean)
+                .join(' ')
             : ''
         }
         confirmLabel="Usuń gościa"
@@ -453,6 +469,6 @@ export function GuestManagementPanel({ eventId, canEdit }: GuestManagementPanelP
           </label>
         )}
       </ConfirmDialog>
-    </SideOptionsContext>
+    </InviterOptionsContext>
   )
 }

@@ -11,10 +11,11 @@ import {
   LastNameField,
   PhoneField,
   PlusOneField,
-  SideField,
+  InviterField,
+  InviterFlagField,
 } from './guestFormFields'
 import { useGuestForm, useGuestSubmit, type GuestSaveHandlers } from './guestFormModel'
-import { useSideOptions } from './sideOptionsContext'
+import { useInviterOptions } from './inviterOptionsContext'
 
 type GuestEditSheetProps = GuestSaveHandlers & {
   guest: Guest | null
@@ -35,7 +36,8 @@ export function GuestEditSheet({
   onSave,
 }: GuestEditSheetProps) {
   const idPrefix = useId()
-  const sides = useSideOptions()
+  const inviters = useInviterOptions()
+  const guestId = guest?.id ?? null
   const form = useGuestForm({ guest, defaultGroupId, groups, onDirtyChange })
   const submit = useGuestSubmit(form, { onCreateGroup, onSave })
   const { isSubmitting, errors } = form.formState
@@ -54,7 +56,8 @@ export function GuestEditSheet({
           <LastNameField {...fieldProps} />
           <PlusOneField {...fieldProps} />
           <AttendanceField {...fieldProps} />
-          {sides.enabled && <SideField {...fieldProps} />}
+          {inviters.enabled && <InviterField {...fieldProps} guestId={guestId} />}
+          <InviterFlagField {...fieldProps} guestId={guestId} />
           <AgeGroupField {...fieldProps} />
           <GroupField {...fieldProps} groups={groups} />
           <AddressField {...fieldProps} groupAddress={groupAddress} />

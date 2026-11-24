@@ -101,8 +101,6 @@ export type Database = {
           access_code_hash: string;
           created_at: string;
           created_by: string | null;
-          host_a_label: string | null;
-          host_b_label: string | null;
           id: string;
           name: string;
           starts_at: string | null;
@@ -112,8 +110,6 @@ export type Database = {
           access_code_hash: string;
           created_at?: string;
           created_by?: string | null;
-          host_a_label?: string | null;
-          host_b_label?: string | null;
           id?: string;
           name: string;
           starts_at?: string | null;
@@ -122,8 +118,6 @@ export type Database = {
           access_code_hash?: string;
           created_at?: string;
           created_by?: string | null;
-          host_a_label?: string | null;
-          host_b_label?: string | null;
           id?: string;
           name?: string;
           starts_at?: string | null;
@@ -258,38 +252,48 @@ export type Database = {
         Row: {
           address: string | null;
           created_at: string;
+          default_invited_jointly: boolean;
+          default_inviter_id: string | null;
           event_id: string;
           id: string;
           invitation_sent_at: string | null;
           name: string;
           notes: string | null;
-          side: Database["public"]["Enums"]["guest_side"] | null;
           updated_at: string;
         };
         ComputedFields: never;
         Insert: {
           address?: string | null;
           created_at?: string;
+          default_invited_jointly?: boolean;
+          default_inviter_id?: string | null;
           event_id: string;
           id?: string;
           invitation_sent_at?: string | null;
           name: string;
           notes?: string | null;
-          side?: Database["public"]["Enums"]["guest_side"] | null;
           updated_at?: string;
         };
         Update: {
           address?: string | null;
           created_at?: string;
+          default_invited_jointly?: boolean;
+          default_inviter_id?: string | null;
           event_id?: string;
           id?: string;
           invitation_sent_at?: string | null;
           name?: string;
           notes?: string | null;
-          side?: Database["public"]["Enums"]["guest_side"] | null;
           updated_at?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "guest_groups_default_inviter_fkey";
+            columns: ["event_id", "default_inviter_id"];
+            isOneToOne: false;
+            referencedRelation: "guests";
+            referencedColumns: ["event_id", "id"];
+          },
           {
             foreignKeyName: "guest_groups_event_id_fkey";
             columns: ["event_id"];
@@ -311,6 +315,9 @@ export type Database = {
           first_name: string | null;
           group_id: string | null;
           id: string;
+          invited_by_guest_id: string | null;
+          invited_jointly: boolean;
+          is_inviter: boolean;
           is_plus_one: boolean;
           last_name: string | null;
           needs_accommodation: boolean;
@@ -318,7 +325,6 @@ export type Database = {
           notes: string | null;
           phone: string | null;
           seat_number: number | null;
-          side: Database["public"]["Enums"]["guest_side"] | null;
           table_id: string | null;
           updated_at: string;
           user_id: string | null;
@@ -335,6 +341,9 @@ export type Database = {
           first_name?: string | null;
           group_id?: string | null;
           id?: string;
+          invited_by_guest_id?: string | null;
+          invited_jointly?: boolean;
+          is_inviter?: boolean;
           is_plus_one?: boolean;
           last_name?: string | null;
           needs_accommodation?: boolean;
@@ -342,7 +351,6 @@ export type Database = {
           notes?: string | null;
           phone?: string | null;
           seat_number?: number | null;
-          side?: Database["public"]["Enums"]["guest_side"] | null;
           table_id?: string | null;
           updated_at?: string;
           user_id?: string | null;
@@ -358,6 +366,9 @@ export type Database = {
           first_name?: string | null;
           group_id?: string | null;
           id?: string;
+          invited_by_guest_id?: string | null;
+          invited_jointly?: boolean;
+          is_inviter?: boolean;
           is_plus_one?: boolean;
           last_name?: string | null;
           needs_accommodation?: boolean;
@@ -365,7 +376,6 @@ export type Database = {
           notes?: string | null;
           phone?: string | null;
           seat_number?: number | null;
-          side?: Database["public"]["Enums"]["guest_side"] | null;
           table_id?: string | null;
           updated_at?: string;
           user_id?: string | null;
@@ -383,6 +393,13 @@ export type Database = {
             columns: ["event_id", "group_id"];
             isOneToOne: false;
             referencedRelation: "guest_groups";
+            referencedColumns: ["event_id", "id"];
+          },
+          {
+            foreignKeyName: "guests_invited_by_fkey";
+            columns: ["event_id", "invited_by_guest_id"];
+            isOneToOne: false;
+            referencedRelation: "guests";
             referencedColumns: ["event_id", "id"];
           },
           {
@@ -628,7 +645,6 @@ export type Database = {
       event_role: "ADMIN" | "EDITOR" | "GUEST";
       expense_status: "PLANNED" | "BOOKED" | "PAID";
       guest_age_group: "ADULT" | "CHILD" | "INFANT";
-      guest_side: "HOST_A" | "HOST_B" | "BOTH";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -751,7 +767,6 @@ export const Constants = {
       event_role: ["ADMIN", "EDITOR", "GUEST"],
       expense_status: ["PLANNED", "BOOKED", "PAID"],
       guest_age_group: ["ADULT", "CHILD", "INFANT"],
-      guest_side: ["HOST_A", "HOST_B", "BOTH"],
     },
   },
 } as const;

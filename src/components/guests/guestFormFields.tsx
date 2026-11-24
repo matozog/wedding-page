@@ -2,15 +2,17 @@ import type { ReactNode } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 import { Input } from '@/components/ui/input'
 import { NativeSelect } from '@/components/ui/native-select'
+import { countPl, pluralPl } from '@/lib/plural'
 import { cn } from '@/lib/utils'
 import {
   AGE_GROUP_OPTIONS,
   ATTENDANCE_OPTIONS,
   GUEST_LIMITS,
+  groupInviterValue,
   type GuestGroup,
 } from '@/types/guest'
 import { NEW_GROUP_VALUE, type GuestFormLayout, type GuestFormValues } from './guestFormModel'
-import { useSideOptions } from './sideOptionsContext'
+import { useInviterOptions } from './inviterOptionsContext'
 
 // -----------------------------------------------------------------------------
 // Pola
@@ -142,21 +144,57 @@ export function PhoneField({ form, idPrefix, layout }: FieldProps) {
   )
 }
 
-export function SideField({ form, idPrefix, layout }: FieldProps) {
-  const id = `${idPrefix}-side`
-  const sides = useSideOptions()
+// Wybór "od kogo" - osoby oznaczone jako zapraszające (bez edytowanej
+// osoby) i "Wspólny".
+export function InviterField({ form, idPrefix, layout, guestId }: FieldProps & { guestId: string | null }) {
+  const id = `${idPrefix}-inviter`
+  const inviters = useInviterOptions()
 
   return (
     <FieldShell id={id} label="Od kogo" layout={layout}>
-      <NativeSelect id={id} className={inputSize(layout)} {...form.register('side')}>
+      <NativeSelect id={id} className={inputSize(layout)} {...form.register('inviter')}>
         <option value="">—</option>
-        {sides.options.map(({ value, label }) => (
-          <option key={value} value={value}>
-            {label}
-          </option>
-        ))}
+        {inviters.options
+          .filter(({ value }) => value !== guestId)
+          .map(({ value, label }) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
       </NativeSelect>
     </FieldShell>
+  )
+}
+
+// Oznaczenie osoby, od której mogą być inni goście. Odznaczenie osoby z
+// przypisanymi gośćmi zdejmuje im "od kogo" (robi to baza) - uprzedzamy.
+export function InviterFlagField({ form, idPrefix, guestId }: FieldProps & { guestId: string | null }) {
+  const id = `${idPrefix}-is-inviter`
+  const inviters = useInviterOptions()
+  const invitedCount = guestId ? inviters.countOf(guestId) : 0
+  const losing = invitedCount > 0 && !form.watch('is_inviter')
+
+  return (
+    <div className="flex flex-col gap-1 self-end py-2">
+      <div className="flex items-center gap-2">
+        <input
+          id={id}
+          type="checkbox"
+          className="size-4 rounded border-input accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-describedby={losing ? `${id}-warning` : undefined}
+          {...form.register('is_inviter')}
+        />
+        <label htmlFor={id} className="text-sm">
+          Osoba zapraszająca
+        </label>
+      </div>
+      {losing && (
+        <p id={`${id}-warning`} className="text-xs text-destructive">
+          Po zapisie {countPl(invitedCount, 'osoba', 'osoby', 'osób')}{' '}
+          {pluralPl(invitedCount, 'straci', 'stracą', 'straci')} przypisanie „od kogo”.
+        </p>
+      )}
+    </div>
   )
 }
 
@@ -222,12 +260,13 @@ export function GroupField({
   const isNew = form.watch('group_id') === NEW_GROUP_VALUE
   const newNameError = form.formState.errors.new_group_name?.message
 
-  // Nowy gość w grupie przejmuje jej stronę, jeśli nie wybrano innej.
+  // Gość w grupie przejmuje jej domyślne "od kogo", jeśli nie wybrano innego.
   const groupRegistration = form.register('group_id', {
     onChange: (event: { target: { value: string } }) => {
       const group = groups.find((item) => item.id === event.target.value)
-      if (group?.side && !form.getValues('side')) {
-        form.setValue('side', group.side, { shouldDirty: true })
+      const groupInviter = group ? groupInviterValue(group) : ''
+      if (groupInviter && !form.getValues('inviter')) {
+        form.setValue('inviter', groupInviter, { shouldDirty: true })
       }
     },
   })

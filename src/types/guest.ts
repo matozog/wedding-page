@@ -5,7 +5,6 @@ type GuestRow = Database['public']['Tables']['guests']['Row']
 type GuestGroupRow = Database['public']['Tables']['guest_groups']['Row']
 
 export type Attendance = Enums['attendance_likelihood']
-export type GuestSide = Enums['guest_side']
 export type GuestAgeGroup = Enums['guest_age_group']
 
 export type Guest = Pick<
@@ -16,22 +15,28 @@ export type Guest = Pick<
   | 'last_name'
   | 'address'
   | 'phone'
-  | 'side'
   | 'attendance'
   | 'age_group'
   | 'is_plus_one'
+  | 'is_inviter'
+  | 'invited_by_guest_id'
+  | 'invited_jointly'
   | 'created_at'
 >
 
-export type GuestGroup = Pick<GuestGroupRow, 'id' | 'name' | 'address' | 'side' | 'created_at'>
+export type GuestGroup = Pick<
+  GuestGroupRow,
+  'id' | 'name' | 'address' | 'default_inviter_id' | 'default_invited_jointly' | 'created_at'
+>
 
 // Pola edytowane w panelu (event_id dokłada warstwa API).
 export type GuestInput = Omit<Guest, 'id' | 'created_at'>
 export type GuestGroupInput = Omit<GuestGroup, 'id' | 'created_at'>
 
 export const GUEST_SELECT_FIELDS =
-  'id, group_id, first_name, last_name, address, phone, side, attendance, age_group, is_plus_one, created_at' as const
-export const GUEST_GROUP_SELECT_FIELDS = 'id, name, address, side, created_at' as const
+  'id, group_id, first_name, last_name, address, phone, attendance, age_group, is_plus_one, is_inviter, invited_by_guest_id, invited_jointly, created_at' as const
+export const GUEST_GROUP_SELECT_FIELDS =
+  'id, name, address, default_inviter_id, default_invited_jointly, created_at' as const
 
 // Kolejność = kolejność kafelków licznika i sortowania po obecności.
 export const ATTENDANCE_OPTIONS: readonly { value: Attendance; label: string }[] = [
@@ -49,31 +54,6 @@ export const ATTENDANCE_LABELS = Object.fromEntries(
 export const ATTENDANCE_ORDER = Object.fromEntries(
   ATTENDANCE_OPTIONS.map(({ value }, index) => [value, index])
 ) as Record<Attendance, number>
-
-// "Od kogo" - etykiety stron pochodzą z wydarzenia (events.host_a_label /
-// host_b_label). Bez etykiet wydarzenie nie dzieli gości na strony, a panel
-// ukrywa tę kolumnę.
-export type HostLabels = { hostA: string | null; hostB: string | null }
-
-export type SideOptions = {
-  enabled: boolean
-  options: readonly { value: GuestSide; label: string }[]
-  labelOf: (side: GuestSide | null) => string | null
-}
-
-export const buildSideOptions = ({ hostA, hostB }: HostLabels): SideOptions => {
-  const enabled = Boolean(hostA || hostB)
-  const options: { value: GuestSide; label: string }[] = enabled
-    ? [
-        { value: 'HOST_A', label: hostA || 'Strona A' },
-        { value: 'HOST_B', label: hostB || 'Strona B' },
-        { value: 'BOTH', label: 'Wspólny' },
-      ]
-    : []
-  const labels = new Map(options.map(({ value, label }) => [value, label]))
-
-  return { enabled, options, labelOf: (side) => (side ? (labels.get(side) ?? null) : null) }
-}
 
 export const AGE_GROUP_OPTIONS: readonly { value: GuestAgeGroup; label: string }[] = [
   { value: 'ADULT', label: 'Dorosły' },
@@ -96,3 +76,72 @@ export const GUEST_LIMITS = {
 export const guestDisplayName = (guest: Pick<Guest, 'first_name' | 'last_name' | 'is_plus_one'>) =>
   [guest.first_name, guest.last_name].filter(Boolean).join(' ').trim() ||
   (guest.is_plus_one ? 'Osoba towarzysząca' : 'Bez imienia')
+
+// -----------------------------------------------------------------------------
+// "Od kogo" - osoba zapraszająca z listy (guests.is_inviter) albo "Wspólny"
+// (zaproszony przez wszystkich). W formularzach i filtrach jedna wartość:
+// '' (brak) | JOINT_INVITER | id osoby zapraszającej.
+// -----------------------------------------------------------------------------
+export const JOINT_INVITER = 'JOINT'
+// Tylko filtr: osoby bez przypisania.
+export const NO_INVITER = 'NONE'
+
+export const inviterValueOf = (invitedBy: string | null, jointly: boolean) =>
+  jointly ? JOINT_INVITER : (invitedBy ?? '')
+
+export const guestInviterValue = (guest: Pick<Guest, 'invited_by_guest_id' | 'invited_jointly'>) =>
+  inviterValueOf(guest.invited_by_guest_id, guest.invited_jointly)
+
+export const groupInviterValue = (
+  group: Pick<GuestGroup, 'default_inviter_id' | 'default_invited_jointly'>
+) => inviterValueOf(group.default_inviter_id, group.default_invited_jointly)
+
+export const fromInviterValue = (value: string) => ({
+  invitedBy: value && value !== JOINT_INVITER ? value : null,
+  jointly: value === JOINT_INVITER,
+})
+
+export type InviterOption = { value: string; label: string; count: number }
+
+export type InviterOptions = {
+  // Kolumna, filtr i licznik "Od kogo" mają sens dopiero, gdy ktoś jest
+  // oznaczony jako zapraszający (albo ktoś jest "wspólny").
+  enabled: boolean
+  // Osoby zapraszające (alfabetycznie), na końcu "Wspólny".
+  options: readonly InviterOption[]
+  unassignedCount: number
+  labelOf: (value: string) => string | null
+  countOf: (value: string) => number
+}
+
+const inviterCollator = new Intl.Collator('pl', { sensitivity: 'base' })
+
+export const buildInviterOptions = (guests: readonly Guest[]): InviterOptions => {
+  const counts = new Map<string, number>()
+  let unassignedCount = 0
+
+  for (const guest of guests) {
+    const value = guestInviterValue(guest)
+    if (value) counts.set(value, (counts.get(value) ?? 0) + 1)
+    else unassignedCount += 1
+  }
+
+  const inviters = guests
+    .filter((guest) => guest.is_inviter)
+    .map((guest) => ({ value: guest.id, label: guestDisplayName(guest), count: counts.get(guest.id) ?? 0 }))
+    .sort((a, b) => inviterCollator.compare(a.label, b.label))
+
+  const options = [
+    ...inviters,
+    { value: JOINT_INVITER, label: 'Wspólny', count: counts.get(JOINT_INVITER) ?? 0 },
+  ]
+  const labels = new Map(options.map(({ value, label }) => [value, label]))
+
+  return {
+    enabled: inviters.length > 0 || counts.has(JOINT_INVITER),
+    options,
+    unassignedCount,
+    labelOf: (value) => (value ? (labels.get(value) ?? null) : null),
+    countOf: (value) => counts.get(value) ?? 0,
+  }
+}

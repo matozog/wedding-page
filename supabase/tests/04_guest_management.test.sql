@@ -64,24 +64,10 @@ select ok(
   'attendance is not null and defaults to UNKNOWN'
 );
 
--- neutral sides, event labels -----------------------------------------------------
-select ok(
-  (select enum_range(null::public.guest_side)::text = '{HOST_A,HOST_B,BOTH}'),
-  'guest_side values are neutral'
-);
--- labels are set outside the app (Studio) - clients cannot update events
-select pg_temp.expect_error(format($$update public.events set host_a_label = 'X' where id = %L$$, :'ev'), 'client cannot set host labels');
-reset role;
-update public.events set host_a_label = 'Ala', host_b_label = 'Olek' where id = :'ev';
-select throws_ok(format($$update public.events set host_a_label = '  ' where id = %L$$, :'ev'), '23514', null, 'blank host label rejected');
-
-select pg_temp.act_as(:G);
-select ok((select host_a_label = 'Ala' and host_b_label = 'Olek' from public.events where id = :'ev'), 'member reads host labels');
-
 -- event ADMIN (not platform admin) manages the list ------------------------------
 select pg_temp.act_as(:B);
-insert into public.guest_groups (event_id, name, address, side)
-values (:'ev', 'Kowalscy', 'ul. Polna 1, 00-001 Warszawa', 'HOST_A') returning id as grp \gset
+insert into public.guest_groups (event_id, name, address)
+values (:'ev', 'Kowalscy', 'ul. Polna 1, 00-001 Warszawa') returning id as grp \gset
 insert into public.guests (event_id, group_id, first_name, last_name, attendance)
 values (:'ev', :'grp', 'Jan', 'Kowalski', 'LIKELY') returning id as g1 \gset
 insert into public.guests (event_id, group_id, first_name, address)

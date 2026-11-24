@@ -1,13 +1,15 @@
 import { useEffect, useRef } from 'react'
 import { useForm, type UseFormReturn } from 'react-hook-form'
-import type {
-  Attendance,
-  Guest,
-  GuestAgeGroup,
-  GuestGroup,
-  GuestGroupInput,
-  GuestInput,
-  GuestSide,
+import {
+  fromInviterValue,
+  groupInviterValue,
+  guestInviterValue,
+  type Attendance,
+  type Guest,
+  type GuestAgeGroup,
+  type GuestGroup,
+  type GuestGroupInput,
+  type GuestInput,
 } from '@/types/guest'
 
 export const NEW_GROUP_VALUE = '__new__'
@@ -17,7 +19,9 @@ export type GuestFormValues = {
   last_name: string
   address: string
   phone: string
-  side: GuestSide | ''
+  // "Od kogo": '' | JOINT_INVITER | id osoby zapraszającej
+  inviter: string
+  is_inviter: boolean
   attendance: Attendance
   age_group: GuestAgeGroup
   is_plus_one: boolean
@@ -41,7 +45,8 @@ const toValues = (guest: Guest | null, groupId: string | null, groups: readonly 
     last_name: guest?.last_name ?? '',
     address: guest?.address ?? '',
     phone: guest?.phone ?? '',
-    side: guest ? (guest.side ?? '') : (group?.side ?? ''),
+    inviter: guest ? guestInviterValue(guest) : group ? groupInviterValue(group) : '',
+    is_inviter: guest?.is_inviter ?? false,
     attendance: guest?.attendance ?? 'UNKNOWN',
     age_group: guest?.age_group ?? 'ADULT',
     is_plus_one: guest?.is_plus_one ?? false,
@@ -57,6 +62,7 @@ const emptyToNull = (value: string) => {
 
 export const toSubmit = (values: GuestFormValues): GuestFormSubmit => {
   const isNewGroup = values.group_id === NEW_GROUP_VALUE
+  const { invitedBy, jointly } = fromInviterValue(values.inviter)
 
   return {
     guest: {
@@ -64,14 +70,21 @@ export const toSubmit = (values: GuestFormValues): GuestFormSubmit => {
       last_name: emptyToNull(values.last_name),
       address: emptyToNull(values.address),
       phone: emptyToNull(values.phone),
-      side: values.side || null,
+      is_inviter: values.is_inviter,
+      invited_by_guest_id: invitedBy,
+      invited_jointly: jointly,
       attendance: values.attendance,
       age_group: values.age_group,
       is_plus_one: values.is_plus_one,
       group_id: isNewGroup || values.group_id === '' ? null : values.group_id,
     },
     newGroup: isNewGroup
-      ? { name: values.new_group_name.trim(), address: null, side: values.side || null }
+      ? {
+          name: values.new_group_name.trim(),
+          address: null,
+          default_inviter_id: invitedBy,
+          default_invited_jointly: jointly,
+        }
       : null,
   }
 }

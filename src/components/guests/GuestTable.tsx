@@ -16,13 +16,15 @@ import { countPl } from '@/lib/plural'
 import { cn } from '@/lib/utils'
 import {
   AGE_GROUP_LABELS,
+  groupInviterValue,
   guestDisplayName,
+  guestInviterValue,
   type Guest,
   type GuestGroup,
 } from '@/types/guest'
 import { AttendanceBadge } from './AttendanceBadge'
 import { sectionTitle, type GuestSection } from './guestSections'
-import { useSideOptions } from './sideOptionsContext'
+import { useInviterOptions } from './inviterOptionsContext'
 
 export type GuestListEditing =
   | { mode: 'new'; groupId: string | null }
@@ -36,11 +38,16 @@ export type GuestListActions = {
   onEditGroup: (group: GuestGroup) => void
   onDeleteGroup: (group: GuestGroup) => void
   onToggleCollapsed: (key: string) => void
+  // Filtr listy po gościach danej osoby zapraszającej.
+  onShowInvitees: (inviterId: string) => void
 }
 
 type GuestTableProps = GuestListActions & {
   sections: GuestSection[]
+  // Sekcje grup (widok grup i istnieje co najmniej jedna grupa).
   groupView: boolean
+  // Kolumna "Grupa" w widoku płaskim - tylko gdy są jakieś grupy.
+  showGroupColumn: boolean
   groupsById: ReadonlyMap<string, GuestGroup>
   sort: GuestSort
   canEdit: boolean
@@ -94,7 +101,37 @@ function SortableHead({
   )
 }
 
-function GuestNameCell({ guest }: { guest: Guest }) {
+// Znacznik osoby zapraszającej z liczbą jej gości - kliknięcie filtruje listę.
+export function InviterBadge({
+  guest,
+  onShowInvitees,
+}: {
+  guest: Guest
+  onShowInvitees: (inviterId: string) => void
+}) {
+  const inviters = useInviterOptions()
+  const count = inviters.countOf(guest.id)
+
+  return (
+    <button
+      type="button"
+      onClick={() => onShowInvitees(guest.id)}
+      title={`Pokaż gości: ${guestDisplayName(guest)}`}
+      aria-label={`Osoba zapraszająca, ${countPl(count, 'osoba', 'osoby', 'osób')} od niej. Pokaż te osoby.`}
+      className="inline-flex w-fit items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      zapraszający · {countPl(count, 'osoba', 'osoby', 'osób')}
+    </button>
+  )
+}
+
+function GuestNameCell({
+  guest,
+  onShowInvitees,
+}: {
+  guest: Guest
+  onShowInvitees: (inviterId: string) => void
+}) {
   const tags = [
     guest.is_plus_one && guest.first_name && 'os. towarzysząca',
     guest.age_group !== 'ADULT' && AGE_GROUP_LABELS[guest.age_group].toLowerCase(),
@@ -106,6 +143,7 @@ function GuestNameCell({ guest }: { guest: Guest }) {
         {guest.first_name ?? (guest.is_plus_one ? 'Osoba towarzysząca' : '—')}
       </span>
       {tags.length > 0 && <span className="text-xs text-muted-foreground">{tags.join(' · ')}</span>}
+      {guest.is_inviter && <InviterBadge guest={guest} onShowInvitees={onShowInvitees} />}
     </div>
   )
 }
@@ -137,28 +175,32 @@ export function AddressText({
 function GuestRow({
   guest,
   groupView,
+  showGroupColumn,
   groupsById,
   canEdit,
   actionsDisabled,
   onEdit,
   onDelete,
+  onShowInvitees,
 }: {
   guest: Guest
   groupView: boolean
+  showGroupColumn: boolean
   groupsById: ReadonlyMap<string, GuestGroup>
   canEdit: boolean
   actionsDisabled: boolean
   onEdit: (guest: Guest) => void
   onDelete: (guest: Guest) => void
+  onShowInvitees: (inviterId: string) => void
 }) {
-  const sides = useSideOptions()
+  const inviters = useInviterOptions()
   const name = guestDisplayName(guest)
   const group = guest.group_id ? groupsById.get(guest.group_id) : undefined
 
   return (
     <TableRow className="hover:bg-muted/40 [&>td]:py-1.5" onDoubleClick={canEdit && !actionsDisabled ? () => onEdit(guest) : undefined}>
       <TableCell className={cn(groupView && 'pl-10')}>
-        <GuestNameCell guest={guest} />
+        <GuestNameCell guest={guest} onShowInvitees={onShowInvitees} />
       </TableCell>
       <TableCell>{guest.last_name ?? <span className="text-muted-foreground">—</span>}</TableCell>
       <TableCell className="max-w-72">
@@ -176,13 +218,15 @@ function GuestRow({
           <span className="text-muted-foreground">—</span>
         )}
       </TableCell>
-      {sides.enabled && (
-        <TableCell>{sides.labelOf(guest.side) ?? <span className="text-muted-foreground">—</span>}</TableCell>
+      {inviters.enabled && (
+        <TableCell>
+          {inviters.labelOf(guestInviterValue(guest)) ?? <span className="text-muted-foreground">—</span>}
+        </TableCell>
       )}
       <TableCell>
         <AttendanceBadge value={guest.attendance} />
       </TableCell>
-      {!groupView && (
+      {showGroupColumn && (
         <TableCell>{group?.name ?? <span className="text-muted-foreground">—</span>}</TableCell>
       )}
       {canEdit && (
@@ -233,10 +277,10 @@ function SectionHeaderRow({
   canEdit: boolean
   expanded: boolean
 } & Pick<GuestListActions, 'onToggleCollapsed' | 'onAddToGroup' | 'onEditGroup' | 'onDeleteGroup'>) {
-  const sides = useSideOptions()
+  const inviters = useInviterOptions()
   const title = sectionTitle(section)
   const group = section.kind === 'group' ? section.group : null
-  const sideLabel = sides.labelOf(group?.side ?? null)
+  const inviterLabel = group ? inviters.labelOf(groupInviterValue(group)) : null
   const count =
     section.guests.length === section.totalInGroup
       ? countPl(section.totalInGroup, 'osoba', 'osoby', 'osób')
@@ -266,7 +310,7 @@ function SectionHeaderRow({
             {title}
           </button>
           <span className="text-sm text-muted-foreground">{count}</span>
-          {sideLabel && <span className="text-sm text-muted-foreground">· {sideLabel}</span>}
+          {inviterLabel && <span className="text-sm text-muted-foreground">· od: {inviterLabel}</span>}
           {group?.address && (
             <span className="min-w-0 truncate text-sm text-muted-foreground">· {group.address}</span>
           )}
@@ -320,6 +364,7 @@ function SectionHeaderRow({
 export function GuestTable({
   sections,
   groupView,
+  showGroupColumn,
   groupsById,
   sort,
   canEdit,
@@ -331,8 +376,9 @@ export function GuestTable({
   renderEditRow,
   ...actions
 }: GuestTableProps) {
-  const sides = useSideOptions()
-  const columnCount = 5 + (sides.enabled ? 1 : 0) + (groupView ? 0 : 1) + (canEdit ? 1 : 0)
+  const inviters = useInviterOptions()
+  const columnCount =
+    5 + (inviters.enabled ? 1 : 0) + (showGroupColumn ? 1 : 0) + (canEdit ? 1 : 0)
   const sortProps = { sort, onSortChange }
   const editingId = editing?.mode === 'edit' ? editing.guestId : null
 
@@ -345,11 +391,13 @@ export function GuestTable({
           key={guest.id}
           guest={guest}
           groupView={groupView}
+          showGroupColumn={showGroupColumn}
           groupsById={groupsById}
           canEdit={canEdit}
           actionsDisabled={editing !== null}
           onEdit={actions.onEdit}
           onDelete={actions.onDelete}
+          onShowInvitees={actions.onShowInvitees}
         />
       )
     )
@@ -367,9 +415,9 @@ export function GuestTable({
           <SortableHead label="Nazwisko" sortKey="last_name" {...sortProps} />
           <SortableHead label="Adres" sortKey="address" {...sortProps} />
           <SortableHead label="Telefon" sortKey="phone" {...sortProps} />
-          {sides.enabled && <SortableHead label="Od kogo" sortKey="side" {...sortProps} />}
+          {inviters.enabled && <SortableHead label="Od kogo" sortKey="inviter" {...sortProps} />}
           <SortableHead label="Obecność" sortKey="attendance" {...sortProps} />
-          {!groupView && <SortableHead label="Grupa" sortKey="group" {...sortProps} />}
+          {showGroupColumn && <SortableHead label="Grupa" sortKey="group" {...sortProps} />}
           {canEdit && (
             <TableHead className="text-right">
               <span className="sr-only">Akcje</span>
