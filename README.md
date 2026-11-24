@@ -1,32 +1,44 @@
-# React + TypeScript + Vite
+# Wedding page
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Strona wesela: React 19 + TypeScript + Vite + Tailwind CSS 4 + shadcn/ui, dane i logowanie w Supabase.
 
-Currently, two official plugins are available:
+## Uruchomienie lokalne
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Wymagania: Node.js 24+, Docker Desktop (uruchomiony).
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```sh
+npm install
+npm run dev:local
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+`dev:local` sprawdza Dockera, uruchamia lokalny stack Supabase (jeśli jeszcze nie działa),
+tworzy `.env.development.local` z publiczną konfiguracją lokalnego stacku (jeśli go brak)
+i startuje Vite na http://localhost:5173. Kod testowego wydarzenia z `supabase/seed.sql`: **TEST123**.
+
+Pierwszy start pobiera obrazy Dockera i trwa kilka minut.
+
+| Skrypt | Opis |
+| --- | --- |
+| `npm run dev:local` | Supabase + Vite jedną komendą |
+| `npm run dev:local:reset` | jak wyżej, ale najpierw reset lokalnej bazy (migracje + seed) |
+| `npm run db:start` / `db:stop` / `db:status` | sterowanie lokalnym stackiem Supabase |
+| `npm run db:reset` | ponowne wgranie migracji i seeda do lokalnej bazy |
+| `npm run db:test` | testy pgTAP z `supabase/tests` |
+| `npm run db:types` | regeneracja `src/types/database.ts` ze schematu |
+| `npm run lint` / `npm run build` | Oxlint / sprawdzenie typów i build |
+
+Po zamknięciu Vite Supabase dalej działa — zatrzymasz go przez `npm run db:stop`.
+
+Lokalnie działa logowanie anonimowe. Logowanie przez Google wymaga dodatkowej konfiguracji
+`[auth.external.google]` w `supabase/config.toml`.
+
+Adresy lokalnego stacku: API http://127.0.0.1:54321, Studio http://127.0.0.1:54323.
+
+## Deploy
+
+Branch `em` → `em.ozogowie.pl` (Cloudflare Worker `wedding-page-em`):
+
+```sh
+npm run build
+npx wrangler deploy --env em
+```
