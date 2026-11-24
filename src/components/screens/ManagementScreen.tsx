@@ -1,16 +1,21 @@
-import { ArrowLeft, LayoutDashboard, LogOut, ShieldAlert } from 'lucide-react'
+import { ArrowLeft, LogOut, ShieldAlert } from 'lucide-react'
 import { useEffect } from 'react'
 import { Link } from 'react-router'
+import { GuestManagementPanel } from '@/components/guests/GuestManagementPanel'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
 import { weddingContent } from '@/config/weddingContent'
 import { ROUTES } from '@/lib/routes'
 
 type ManagementScreenProps = {
+  eventId: string
   eventName: string
   nickname: string
+  // ADMIN i EDITOR (podgląd)
+  canView: boolean
+  // tylko ADMIN
   canManage: boolean
   error: string | null
   onLogout: () => void
@@ -19,8 +24,10 @@ type ManagementScreenProps = {
 // Panel zarządzania wydarzeniem. Ukrycie ekranu przed innymi rolami to tylko
 // warstwa UI - każda operacja panelu musi być autoryzowana w bazie.
 export function ManagementScreen({
+  eventId,
   eventName,
   nickname,
+  canView,
   canManage,
   error,
   onLogout,
@@ -62,7 +69,7 @@ export function ManagementScreen({
       </header>
 
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-        {canManage ? (
+        {canView ? (
           <>
             <div className="mb-8">
               <p className="font-serif text-sm uppercase tracking-[0.3em] text-primary">
@@ -71,20 +78,7 @@ export function ManagementScreen({
               <h1 className="mt-2 font-serif text-4xl text-foreground">{eventName}</h1>
             </div>
 
-            <Card className="border-dashed">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <LayoutDashboard className="size-5 text-primary" aria-hidden="true" />
-                  Panele zarządzania
-                </CardTitle>
-                <CardDescription>
-                  Tutaj pojawią się narzędzia do zarządzania wydarzeniem.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="text-sm text-muted-foreground">
-                Brak dostępnych paneli.
-              </CardContent>
-            </Card>
+            <GuestManagementPanel eventId={eventId} canEdit={canManage} />
           </>
         ) : (
           <Card className="mx-auto max-w-md text-center">
@@ -92,7 +86,7 @@ export function ManagementScreen({
               <ShieldAlert className="mx-auto size-8 text-primary" aria-hidden="true" />
               <h1 className="font-serif text-2xl text-foreground">Brak dostępu</h1>
               <CardDescription>
-                Panel zarządzania jest dostępny tylko dla administratorów wydarzenia.
+                Panel zarządzania jest dostępny tylko dla organizatorów wydarzenia.
               </CardDescription>
             </CardHeader>
             <CardContent>

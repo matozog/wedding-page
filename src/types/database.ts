@@ -250,31 +250,37 @@ export type Database = {
       };
       guest_groups: {
         Row: {
+          address: string | null;
           created_at: string;
           event_id: string;
           id: string;
           invitation_sent_at: string | null;
           name: string;
           notes: string | null;
+          side: Database["public"]["Enums"]["guest_side"] | null;
           updated_at: string;
         };
         ComputedFields: never;
         Insert: {
+          address?: string | null;
           created_at?: string;
           event_id: string;
           id?: string;
           invitation_sent_at?: string | null;
           name: string;
           notes?: string | null;
+          side?: Database["public"]["Enums"]["guest_side"] | null;
           updated_at?: string;
         };
         Update: {
+          address?: string | null;
           created_at?: string;
           event_id?: string;
           id?: string;
           invitation_sent_at?: string | null;
           name?: string;
           notes?: string | null;
+          side?: Database["public"]["Enums"]["guest_side"] | null;
           updated_at?: string;
         };
         Relationships: [
@@ -289,7 +295,9 @@ export type Database = {
       };
       guests: {
         Row: {
+          address: string | null;
           age_group: Database["public"]["Enums"]["guest_age_group"];
+          attendance: Database["public"]["Enums"]["attendance_likelihood"];
           created_at: string;
           diet: string | null;
           email: string | null;
@@ -303,7 +311,6 @@ export type Database = {
           needs_transport: boolean;
           notes: string | null;
           phone: string | null;
-          rsvp_status: Database["public"]["Enums"]["rsvp_status"];
           seat_number: number | null;
           side: Database["public"]["Enums"]["guest_side"] | null;
           table_id: string | null;
@@ -312,7 +319,9 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
+          address?: string | null;
           age_group?: Database["public"]["Enums"]["guest_age_group"];
+          attendance?: Database["public"]["Enums"]["attendance_likelihood"];
           created_at?: string;
           diet?: string | null;
           email?: string | null;
@@ -326,7 +335,6 @@ export type Database = {
           needs_transport?: boolean;
           notes?: string | null;
           phone?: string | null;
-          rsvp_status?: Database["public"]["Enums"]["rsvp_status"];
           seat_number?: number | null;
           side?: Database["public"]["Enums"]["guest_side"] | null;
           table_id?: string | null;
@@ -334,7 +342,9 @@ export type Database = {
           user_id?: string | null;
         };
         Update: {
+          address?: string | null;
           age_group?: Database["public"]["Enums"]["guest_age_group"];
+          attendance?: Database["public"]["Enums"]["attendance_likelihood"];
           created_at?: string;
           diet?: string | null;
           email?: string | null;
@@ -348,7 +358,6 @@ export type Database = {
           needs_transport?: boolean;
           notes?: string | null;
           phone?: string | null;
-          rsvp_status?: Database["public"]["Enums"]["rsvp_status"];
           seat_number?: number | null;
           side?: Database["public"]["Enums"]["guest_side"] | null;
           table_id?: string | null;
@@ -553,6 +562,10 @@ export type Database = {
         Args: { p_access_code: string; p_name: string; p_starts_at?: string };
         Returns: string;
       };
+      delete_guest_group: {
+        Args: { p_delete_guests?: boolean; p_group_id: string };
+        Returns: number;
+      };
       find_event_by_access_code: {
         Args: { p_access_code: string; p_uid: string };
         Returns: string;
@@ -605,11 +618,11 @@ export type Database = {
       upsert_own_profile: { Args: { p_display_name: string; p_uid: string }; Returns: undefined };
     };
     Enums: {
+      attendance_likelihood: "UNKNOWN" | "CONFIRMED" | "LIKELY" | "UNLIKELY" | "DECLINED";
       event_role: "ADMIN" | "EDITOR" | "GUEST";
       expense_status: "PLANNED" | "BOOKED" | "PAID";
       guest_age_group: "ADULT" | "CHILD" | "INFANT";
       guest_side: "BRIDE" | "GROOM" | "BOTH";
-      rsvp_status: "PENDING" | "ATTENDING" | "DECLINED";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -728,11 +741,11 @@ export const Constants = {
   },
   public: {
     Enums: {
+      attendance_likelihood: ["UNKNOWN", "CONFIRMED", "LIKELY", "UNLIKELY", "DECLINED"],
       event_role: ["ADMIN", "EDITOR", "GUEST"],
       expense_status: ["PLANNED", "BOOKED", "PAID"],
       guest_age_group: ["ADULT", "CHILD", "INFANT"],
       guest_side: ["BRIDE", "GROOM", "BOTH"],
-      rsvp_status: ["PENDING", "ATTENDING", "DECLINED"],
     },
   },
 } as const;

@@ -80,8 +80,8 @@ select throws_ok(format($$insert into public.expense_payments (event_id, expense
 -- EDITOR ------------------------------------------------------------------------
 select pg_temp.act_as(:E);
 select ok((select count(*) = 3 from public.guests), 'editor sees guest list');
-update public.guests set rsvp_status = 'ATTENDING' where id = :'g1';
-select ok((select rsvp_status = 'ATTENDING' from public.guests where id = :'g1'), 'editor edits guest');
+update public.guests set attendance = 'CONFIRMED' where id = :'g1';
+select ok((select attendance = 'UNKNOWN' from public.guests where id = :'g1'), 'editor cannot edit guest (read-only guest list)');
 select lives_ok(format($$insert into public.seating_tables (event_id, name) values (%L, 'Stół 3')$$, :'ev'), 'editor adds table');
 select ok((select notes = 'blisko DJ-a' from public.seating_tables where id = :'t1'), 'editor reads internal table notes');
 select ok((select count(*) = 0 from public.expenses) and (select count(*) = 0 from public.budget_categories) and (select count(*) = 0 from public.expense_payments), 'editor sees no budget/expenses/payments');

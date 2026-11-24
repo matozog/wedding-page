@@ -6,6 +6,11 @@ export type EventRole = Database['public']['Enums']['event_role']
 export const canManageAllPhotos = (role: EventRole | null) =>
   role === 'ADMIN' || role === 'EDITOR'
 
-// Dostęp do panelu zarządzania wydarzeniem (tylko w UI - operacje panelu
-// muszą sprawdzać uprawnienia w bazie, np. has_event_role(..., '{ADMIN}')).
+// Uprawnienia panelu zarządzania sprawdzane tylko w UI - każda operacja
+// panelu jest autoryzowana w bazie (RLS / has_event_role).
+
+// Pełne zarządzanie wydarzeniem (edycja listy gości).
 export const canManageEvent = (role: EventRole | null) => role === 'ADMIN'
+
+// Wejście do panelu: ADMIN, a EDITOR w trybie podglądu.
+export const canViewManagement = (role: EventRole | null) => role === 'ADMIN' || role === 'EDITOR'

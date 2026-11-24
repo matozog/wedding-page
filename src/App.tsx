@@ -12,7 +12,7 @@ import { usePhotoUpload } from '@/hooks/usePhotoUpload'
 import { usePhotos } from '@/hooks/usePhotos'
 import { deletePhoto } from '@/lib/photosApi'
 import { ROUTES } from '@/lib/routes'
-import { canManageAllPhotos, canManageEvent } from '@/types/role'
+import { canManageAllPhotos, canManageEvent, canViewManagement } from '@/types/role'
 import type { Photo } from '@/types/photo'
 
 const MANAGEMENT_NAV_LINKS: readonly SectionNavLink[] = [
@@ -100,7 +100,8 @@ function App() {
 
   const error = sessionError ?? photosError
   const canManage = canManageEvent(role)
-  const navLinks = canManage ? MANAGEMENT_NAV_LINKS : undefined
+  const canOpenManagement = canViewManagement(role)
+  const navLinks = canOpenManagement ? MANAGEMENT_NAV_LINKS : undefined
 
   // Zapisane wydarzenie czeka na profil z bazy, a kod sprzed logowania Google
   // na dołączenie - bez tego mignąłby ekran pseudonimu.
@@ -137,8 +138,10 @@ function App() {
           path={ROUTES.management}
           element={
             <ManagementScreen
+              eventId={session.id}
               eventName={session.name}
               nickname={nickname}
+              canView={canOpenManagement}
               canManage={canManage}
               error={sessionError}
               onLogout={logout}
