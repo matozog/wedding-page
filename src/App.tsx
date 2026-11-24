@@ -4,6 +4,7 @@ import { Settings } from 'lucide-react'
 import type { SectionNavLink } from '@/components/layout/SectionNav'
 import { CodeEntryScreen } from '@/components/screens/CodeEntryScreen'
 import { EventGalleryScreen } from '@/components/screens/EventGalleryScreen'
+import { ExpensesManagementScreen } from '@/components/screens/ExpensesManagementScreen'
 import { GuestsManagementScreen } from '@/components/screens/GuestsManagementScreen'
 import { ManagementScreen } from '@/components/screens/ManagementScreen'
 import { NicknameScreen } from '@/components/screens/NicknameScreen'
@@ -143,6 +144,20 @@ function App() {
               eventName={session.name}
               nickname={nickname}
               canView={canOpenManagement}
+              canManage={canManage}
+              error={sessionError}
+              onLogout={logout}
+            />
+          }
+        />
+        <Route
+          path={ROUTES.managementExpenses}
+          element={
+            <ExpensesManagementScreen
+              eventId={session.id}
+              eventName={session.name}
+              nickname={nickname}
+              canView={canManage}
               error={sessionError}
               onLogout={logout}
             />
