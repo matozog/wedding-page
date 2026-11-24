@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
+import { SECTION_IDS } from '@/config/navigation'
 
 const { seating } = weddingContent
 
@@ -46,7 +47,7 @@ export function SeatingPlanSection() {
 
   return (
     <section
-      id="plan-sali"
+      id={SECTION_IDS.seating}
       className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16 lg:px-8"
     >
       <div className="mb-10 text-center">

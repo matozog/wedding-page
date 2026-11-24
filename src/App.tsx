@@ -1,14 +1,23 @@
 import { useCallback, useEffect } from 'react'
+import { Navigate, Route, Routes } from 'react-router'
+import { Settings } from 'lucide-react'
+import type { SectionNavLink } from '@/components/layout/SectionNav'
 import { CodeEntryScreen } from '@/components/screens/CodeEntryScreen'
 import { EventGalleryScreen } from '@/components/screens/EventGalleryScreen'
+import { ManagementScreen } from '@/components/screens/ManagementScreen'
 import { NicknameScreen } from '@/components/screens/NicknameScreen'
 import { weddingContent } from '@/config/weddingContent'
 import { useEventSession } from '@/hooks/useEventSession'
 import { usePhotoUpload } from '@/hooks/usePhotoUpload'
 import { usePhotos } from '@/hooks/usePhotos'
 import { deletePhoto } from '@/lib/photosApi'
-import { canManageAllPhotos } from '@/types/role'
+import { ROUTES } from '@/lib/routes'
+import { canManageAllPhotos, canManageEvent } from '@/types/role'
 import type { Photo } from '@/types/photo'
+
+const MANAGEMENT_NAV_LINKS: readonly SectionNavLink[] = [
+  { to: ROUTES.management, label: 'Zarządzanie', icon: Settings },
+]
 
 function App() {
   const {
@@ -90,6 +99,8 @@ function App() {
   )
 
   const error = sessionError ?? photosError
+  const canManage = canManageEvent(role)
+  const navLinks = canManage ? MANAGEMENT_NAV_LINKS : undefined
 
   // Zapisane wydarzenie czeka na profil z bazy, a kod sprzed logowania Google
   // na dołączenie - bez tego mignąłby ekran pseudonimu.
@@ -97,22 +108,45 @@ function App() {
     return null
   }
 
+  // Ekrany kodu i pseudonimu nie zmieniają adresu, więc po wejściu do
+  // wydarzenia użytkownik trafia na stronę, którą otworzył (np. /management).
   if (hasNickname && session) {
     return (
-      <EventGalleryScreen
-        eventName={session.name}
-        nickname={nickname}
-        photos={photos}
-        loadingPhotos={loadingPhotos}
-        uploading={uploading}
-        uploadProgress={uploadProgress}
-        error={error}
-        canDeletePhoto={canDeletePhoto}
-        getPhotoUrl={getPhotoUrl}
-        onUpload={uploadPhotos}
-        onDeletePhoto={handleDeletePhoto}
-        onLogout={logout}
-      />
+      <Routes>
+        <Route
+          path={ROUTES.home}
+          element={
+            <EventGalleryScreen
+              eventName={session.name}
+              nickname={nickname}
+              photos={photos}
+              loadingPhotos={loadingPhotos}
+              uploading={uploading}
+              uploadProgress={uploadProgress}
+              error={error}
+              navLinks={navLinks}
+              canDeletePhoto={canDeletePhoto}
+              getPhotoUrl={getPhotoUrl}
+              onUpload={uploadPhotos}
+              onDeletePhoto={handleDeletePhoto}
+              onLogout={logout}
+            />
+          }
+        />
+        <Route
+          path={ROUTES.management}
+          element={
+            <ManagementScreen
+              eventName={session.name}
+              nickname={nickname}
+              canManage={canManage}
+              error={sessionError}
+              onLogout={logout}
+            />
+          }
+        />
+        <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
+      </Routes>
     )
   }
 

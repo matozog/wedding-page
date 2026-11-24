@@ -4,6 +4,7 @@ import { LocationMapSection } from '@/components/sections/LocationMapSection'
 import { SeatingPlanSection } from '@/components/sections/SeatingPlanSection'
 import { WeddingScheduleSection } from '@/components/sections/WeddingScheduleSection'
 import { SiteFooter } from '@/components/layout/SiteFooter'
+import type { SectionNavLink } from '@/components/layout/SectionNav'
 import { SiteHeader } from '@/components/layout/SiteHeader'
 import { PhotoGallery } from '@/components/photos/PhotoGallery'
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
@@ -17,6 +18,7 @@ type EventGalleryScreenProps = {
   uploading: boolean
   uploadProgress: number
   error: string | null
+  navLinks?: readonly SectionNavLink[]
   canDeletePhoto: (photo: Photo) => boolean
   getPhotoUrl: (path: string) => Promise<string | null>
   onUpload: (files: File[]) => void
@@ -32,6 +34,7 @@ export function EventGalleryScreen({
   uploading,
   uploadProgress,
   error,
+  navLinks,
   canDeletePhoto,
   getPhotoUrl,
   onUpload,
@@ -45,6 +48,7 @@ export function EventGalleryScreen({
         nickname={nickname}
         uploading={uploading}
         uploadProgress={uploadProgress}
+        navLinks={navLinks}
         onUpload={onUpload}
         onLogout={onLogout}
       />

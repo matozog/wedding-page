@@ -1,12 +1,13 @@
 import { weddingContent } from '@/config/weddingContent'
 import { Card, CardContent } from '@/components/ui/card'
+import { SECTION_IDS } from '@/config/navigation'
 
 const { schedule } = weddingContent
 
 export function WeddingScheduleSection() {
   return (
     <section
-      id="plan-dnia"
+      id={SECTION_IDS.schedule}
       className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16 lg:px-8"
     >
       <div className="mb-10 text-center">

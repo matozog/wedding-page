@@ -3,12 +3,13 @@ import { weddingContent } from '@/config/weddingContent'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { PhotoCarousel } from '@/components/PhotoCarousel'
+import { SECTION_IDS } from '@/config/navigation'
 
 export function AboutCoupleSection() {
   const { couple } = weddingContent
 
   return (
-    <section id="para" className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
+    <section id={SECTION_IDS.couple} className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
       <div className="mb-10 text-center">
         <p className="font-serif text-sm uppercase tracking-[0.3em] text-primary">O nas</p>
         <h2 className="mt-2 font-serif text-4xl text-foreground">Para młoda</h2>

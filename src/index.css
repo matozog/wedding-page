@@ -59,6 +59,27 @@
     @apply border-border;
   }
 
+  /* --site-header-height ustawia SiteHeader (przyklejony nagłówek nie
+     zasłania wtedy tytułu sekcji po przewinięciu z menu). */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
+  section[id] {
+    scroll-margin-top: calc(var(--site-header-height, 0px) + 1rem);
+  }
+
+  /* Fokus przenoszony na sekcję po kliknięciu w menu - bez obramowania całej sekcji. */
+  section[id][tabindex='-1']:focus {
+    outline: none;
+  }
+
   body {
     @apply bg-background text-foreground font-sans antialiased;
     margin: 0;

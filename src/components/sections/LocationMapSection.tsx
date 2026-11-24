@@ -1,5 +1,6 @@
 import { MapPin } from 'lucide-react'
 import { weddingContent } from '@/config/weddingContent'
+import { SECTION_IDS } from '@/config/navigation'
 
 export function LocationMapSection() {
   const { ceremony, reception } = weddingContent.locations
@@ -7,7 +8,7 @@ export function LocationMapSection() {
   const places = [ceremony, reception]
 
   return (
-    <section id="mapa" className="border-t border-border/60 px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
+    <section id={SECTION_IDS.location} className="border-t border-border/60 px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="mb-10 text-center">
           <p className="font-serif text-sm uppercase tracking-[0.3em] text-primary">

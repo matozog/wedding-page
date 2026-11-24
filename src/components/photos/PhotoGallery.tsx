@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { createFullSizePhotoUrl } from '@/lib/photoStorage'
 import type { Photo } from '@/types/photo'
+import { SECTION_IDS } from '@/config/navigation'
 
 type PhotoGalleryProps = {
   photos: Photo[]
@@ -112,7 +113,7 @@ export function PhotoGallery({
 
   return (
     <section
-      id="galeria"
+      id={SECTION_IDS.gallery}
       className="w-full border-y border-border/60 bg-secondary/50 py-8 shadow-inner sm:py-10"
     >
       <div className="mb-8 px-4 text-center sm:px-6">

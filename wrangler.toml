@@ -3,6 +3,8 @@ compatibility_date = "2026-09-05"
 
 [assets]
 directory = "./dist"
+# Ścieżki SPA (np. /management) serwują index.html zamiast 404.
+not_found_handling = "single-page-application"
 
 # em.ozogowie.pl - Worker "wedding-page-em" budowany z tego brancha.
 # Build: npm run build  ->  dist/
@@ -14,3 +16,4 @@ routes = [{ pattern = "em.ozogowie.pl", custom_domain = true }]
 
 [env.em.assets]
 directory = "./dist"
+not_found_handling = "single-page-application"

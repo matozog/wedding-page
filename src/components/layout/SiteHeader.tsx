@@ -1,15 +1,25 @@
 import { Camera, LogOut, Loader2 } from 'lucide-react'
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
+import {
+  SectionNavBar,
+  SectionNavMenu,
+  type SectionNavLink,
+} from '@/components/layout/SectionNav'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import { SECTION_NAV_ITEMS } from '@/config/navigation'
 import { weddingContent } from '@/config/weddingContent'
+import { useActiveSection } from '@/hooks/useActiveSection'
 import { PHOTO_INPUT_ACCEPT } from '@/lib/constants'
+
+const SECTION_ID_LIST = SECTION_NAV_ITEMS.map((item) => item.id)
 
 type SiteHeaderProps = {
   eventName: string
   nickname: string
   uploading: boolean
   uploadProgress: number
+  navLinks?: readonly SectionNavLink[]
   onUpload: (files: File[]) => void
   onLogout: () => void
 }
@@ -18,71 +28,119 @@ export function SiteHeader({
   nickname,
   uploading,
   uploadProgress,
+  navLinks,
   onUpload,
   onLogout,
 }: SiteHeaderProps) {
+  const headerRef = useRef<HTMLElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const activeSectionId = useActiveSection(SECTION_ID_LIST)
+
+  // Wysokość przyklejonego nagłówka trafia do CSS (scroll-margin-top sekcji).
+  useEffect(() => {
+    const header = headerRef.current
+    if (!header) return
+
+    const root = document.documentElement
+    const update = () => {
+      root.style.setProperty('--site-header-height', `${header.offsetHeight}px`)
+    }
+
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(header)
+
+    return () => {
+      observer.disconnect()
+      root.style.removeProperty('--site-header-height')
+    }
+  }, [])
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-        <div className="text-center sm:text-left">
+    <header
+      ref={headerRef}
+      className="sticky top-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur-md"
+    >
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
+        <div className="min-w-0">
           <p className="font-serif text-xs uppercase tracking-[0.3em] text-primary">
             {weddingContent.couple.names}
           </p>
-          {/* <h1 className="font-serif text-3xl text-foreground md:text-4xl">{eventName}</h1> */}
           <p className="mt-1 text-sm text-muted-foreground">
-            Witaj, <span className="font-medium text-foreground">{nickname}</span> — miło, że jesteś z nami
+            Witaj, <span className="font-medium text-foreground">{nickname}</span>
+            <span className="hidden sm:inline"> — miło, że jesteś z nami</span>
           </p>
           <button
             type="button"
             onClick={onLogout}
-            className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+            className="mt-1 inline-flex items-center gap-1 rounded-sm text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <LogOut className="size-3" />
             Zmień pseudonim / wyloguj
           </button>
         </div>
 
-        <div className="flex flex-col items-center gap-2 sm:items-end">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept={PHOTO_INPUT_ACCEPT}
-            multiple
-            className="hidden"
-            disabled={uploading}
-            onChange={(e) => {
-              const files = Array.from(e.target.files ?? [])
-              if (files.length > 0) {
-                onUpload(files)
-              }
-              e.target.value = ''
-            }}
-          />
+        <div className="flex shrink-0 items-start gap-2">
+          <div className="flex flex-col items-end gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={PHOTO_INPUT_ACCEPT}
+              multiple
+              className="hidden"
+              disabled={uploading}
+              onChange={(e) => {
+                const files = Array.from(e.target.files ?? [])
+                if (files.length > 0) {
+                  onUpload(files)
+                }
+                e.target.value = ''
+              }}
+            />
 
-          <Button
-            size="lg"
-            disabled={uploading}
-            onClick={() => fileInputRef.current?.click()}
-            className="min-w-[180px] shadow-sm"
-          >
-            {uploading ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Camera className="size-4" />
+            <Button
+              disabled={uploading}
+              onClick={() => fileInputRef.current?.click()}
+              className="shadow-sm sm:h-11 sm:min-w-[180px] sm:px-8"
+            >
+              {uploading ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Camera className="size-4" />
+              )}
+              {uploading ? (
+                'Wysyłanie…'
+              ) : (
+                <>
+                  <span className="sm:hidden">Dodaj</span>
+                  <span className="hidden sm:inline">Dodaj zdjęcia</span>
+                </>
+              )}
+            </Button>
+
+            {uploading && (
+              <div className="w-full space-y-1">
+                <Progress value={uploadProgress} aria-label="Postęp wysyłania zdjęć" />
+                <p className="text-center text-xs text-muted-foreground">{uploadProgress}%</p>
+              </div>
             )}
-            {uploading ? 'Wysyłanie…' : 'Dodaj zdjęcia'}
-          </Button>
+          </div>
 
-          {uploading && (
-            <div className="w-full min-w-[180px] space-y-1 sm:w-48">
-              <Progress value={uploadProgress} />
-              <p className="text-center text-xs text-muted-foreground">{uploadProgress}%</p>
-            </div>
-          )}
+          <SectionNavMenu
+            items={SECTION_NAV_ITEMS}
+            activeId={activeSectionId}
+            links={navLinks}
+            className="lg:hidden sm:size-11"
+          />
         </div>
       </div>
+
+      <SectionNavBar
+        items={SECTION_NAV_ITEMS}
+        activeId={activeSectionId}
+        links={navLinks}
+        className="hidden border-t border-border/50 px-4 py-2 lg:block"
+      />
     </header>
   )
 }
