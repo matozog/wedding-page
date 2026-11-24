@@ -180,13 +180,14 @@ export type Database = {
           created_at: string;
           created_by: string | null;
           currency: string;
+          deposit_amount: number | null;
           due_date: string | null;
           event_id: string;
           id: string;
           notes: string | null;
           status: Database["public"]["Enums"]["expense_status"];
           title: string;
-          total_amount: number | null;
+          total_amount: number;
           updated_at: string;
           vendor_contact: string | null;
           vendor_name: string | null;
@@ -197,13 +198,14 @@ export type Database = {
           created_at?: string;
           created_by?: string | null;
           currency?: string;
+          deposit_amount?: number | null;
           due_date?: string | null;
           event_id: string;
           id?: string;
           notes?: string | null;
           status?: Database["public"]["Enums"]["expense_status"];
           title: string;
-          total_amount?: number | null;
+          total_amount: number;
           updated_at?: string;
           vendor_contact?: string | null;
           vendor_name?: string | null;
@@ -213,13 +215,14 @@ export type Database = {
           created_at?: string;
           created_by?: string | null;
           currency?: string;
+          deposit_amount?: number | null;
           due_date?: string | null;
           event_id?: string;
           id?: string;
           notes?: string | null;
           status?: Database["public"]["Enums"]["expense_status"];
           title?: string;
-          total_amount?: number | null;
+          total_amount?: number;
           updated_at?: string;
           vendor_contact?: string | null;
           vendor_name?: string | null;
@@ -643,7 +646,7 @@ export type Database = {
     Enums: {
       attendance_likelihood: "UNKNOWN" | "CONFIRMED" | "LIKELY" | "UNLIKELY" | "DECLINED";
       event_role: "ADMIN" | "EDITOR" | "GUEST";
-      expense_status: "PLANNED" | "BOOKED" | "PAID";
+      expense_status: "UNPAID" | "DEPOSIT_PAID" | "PAID";
       guest_age_group: "ADULT" | "CHILD" | "INFANT";
     };
     CompositeTypes: {
@@ -765,7 +768,7 @@ export const Constants = {
     Enums: {
       attendance_likelihood: ["UNKNOWN", "CONFIRMED", "LIKELY", "UNLIKELY", "DECLINED"],
       event_role: ["ADMIN", "EDITOR", "GUEST"],
-      expense_status: ["PLANNED", "BOOKED", "PAID"],
+      expense_status: ["UNPAID", "DEPOSIT_PAID", "PAID"],
       guest_age_group: ["ADULT", "CHILD", "INFANT"],
     },
   },

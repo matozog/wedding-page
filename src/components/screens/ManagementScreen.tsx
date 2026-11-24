@@ -1,8 +1,10 @@
-import { ChevronRight, Users } from 'lucide-react'
+import { ChevronRight, Users, Wallet } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { ManagementLayout } from '@/components/layout/ManagementLayout'
+import { useExpenseSummary } from '@/hooks/useExpenseSummary'
 import { useGuestSummary } from '@/hooks/useGuestSummary'
+import { formatPlnShort } from '@/lib/money'
 import { countPl } from '@/lib/plural'
 import { ROUTES } from '@/lib/routes'
 
@@ -11,6 +13,8 @@ type ManagementScreenProps = {
   eventName: string
   nickname: string
   canView: boolean
+  // tylko ADMIN - wydatki
+  canManage: boolean
   error: string | null
   onLogout: () => void
 }
@@ -55,15 +59,30 @@ export function ManagementScreen({
   eventName,
   nickname,
   canView,
+  canManage,
   error,
   onLogout,
 }: ManagementScreenProps) {
   const { stats, failed } = useGuestSummary(eventId, canView)
+  const expenses = useExpenseSummary(eventId, canManage)
 
   const guestSummary = stats
     ? `${countPl(stats.all.total, 'osoba', 'osoby', 'osób')} na liście · ${stats.expected.total} spodziewanych`
     : failed
       ? ' '
+      : 'Wczytywanie…'
+
+  const expenseSummary = expenses.stats
+    ? expenses.stats.count === 0
+      ? 'Brak wydatków'
+      : [
+          `${formatPlnShort(expenses.stats.paid)} z ${formatPlnShort(expenses.stats.total)} opłacone`,
+          expenses.stats.overdue.count > 0 && `${expenses.stats.overdue.count} po terminie`,
+        ]
+          .filter(Boolean)
+          .join(' · ')
+    : expenses.failed
+      ? ' '
       : 'Wczytywanie…'
 
   return (
@@ -85,6 +104,15 @@ export function ManagementScreen({
           description="Lista gości, grupy (rodziny) i przewidywana obecność."
           summary={guestSummary}
         />
+        {canManage && (
+          <ManagementTile
+            to={ROUTES.managementExpenses}
+            icon={<Wallet className="size-5" aria-hidden="true" />}
+            title="Wydatki"
+            description="Koszty, zadatki i terminy płatności, budżet wg kategorii."
+            summary={expenseSummary}
+          />
+        )}
       </div>
     </ManagementLayout>
   )
