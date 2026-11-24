@@ -7,10 +7,10 @@ import {
   AGE_GROUP_OPTIONS,
   ATTENDANCE_OPTIONS,
   GUEST_LIMITS,
-  SIDE_OPTIONS,
   type GuestGroup,
 } from '@/types/guest'
 import { NEW_GROUP_VALUE, type GuestFormLayout, type GuestFormValues } from './guestFormModel'
+import { useSideOptions } from './sideOptionsContext'
 
 // -----------------------------------------------------------------------------
 // Pola
@@ -144,12 +144,13 @@ export function PhoneField({ form, idPrefix, layout }: FieldProps) {
 
 export function SideField({ form, idPrefix, layout }: FieldProps) {
   const id = `${idPrefix}-side`
+  const sides = useSideOptions()
 
   return (
     <FieldShell id={id} label="Od kogo" layout={layout}>
       <NativeSelect id={id} className={inputSize(layout)} {...form.register('side')}>
         <option value="">—</option>
-        {SIDE_OPTIONS.map(({ value, label }) => (
+        {sides.options.map(({ value, label }) => (
           <option key={value} value={value}>
             {label}
           </option>

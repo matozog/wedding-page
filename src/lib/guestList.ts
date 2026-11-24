@@ -1,7 +1,6 @@
 import {
   ATTENDANCE_OPTIONS,
   ATTENDANCE_ORDER,
-  SIDE_LABELS,
   type Attendance,
   type Guest,
   type GuestAgeGroup,
@@ -29,7 +28,9 @@ const addTo = (count: HeadCount, ageGroup: GuestAgeGroup) => {
   count[ageGroup] += 1
 }
 
-export const computeGuestStats = (guests: readonly Guest[]): GuestStats => {
+export const computeGuestStats = (
+  guests: readonly Pick<Guest, 'attendance' | 'age_group'>[]
+): GuestStats => {
   const byAttendance = Object.fromEntries(
     ATTENDANCE_OPTIONS.map(({ value }) => [value, emptyHeadCount()])
   ) as Record<Attendance, HeadCount>
@@ -144,7 +145,8 @@ export const effectiveAddress = (guest: Guest, groupsById: ReadonlyMap<string, G
 export const sortGuests = (
   guests: readonly Guest[],
   sort: GuestSort,
-  groupsById: ReadonlyMap<string, GuestGroup>
+  groupsById: ReadonlyMap<string, GuestGroup>,
+  sideLabel: (side: GuestSide | null) => string | null
 ): Guest[] => {
   const sign = sort.direction === 'asc' ? 1 : -1
 
@@ -159,11 +161,7 @@ export const sortGuests = (
       case 'address':
         return compareText(effectiveAddress(a, groupsById), effectiveAddress(b, groupsById), sign)
       case 'side':
-        return compareText(
-          a.side ? SIDE_LABELS[a.side] : null,
-          b.side ? SIDE_LABELS[b.side] : null,
-          sign
-        )
+        return compareText(sideLabel(a.side), sideLabel(b.side), sign)
       case 'attendance':
         return (ATTENDANCE_ORDER[a.attendance] - ATTENDANCE_ORDER[b.attendance]) * sign
       case 'group': {

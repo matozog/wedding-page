@@ -1,4 +1,3 @@
-import { weddingContent } from '@/config/weddingContent'
 import type { Database } from './database'
 
 type Enums = Database['public']['Enums']
@@ -51,15 +50,30 @@ export const ATTENDANCE_ORDER = Object.fromEntries(
   ATTENDANCE_OPTIONS.map(({ value }, index) => [value, index])
 ) as Record<Attendance, number>
 
-export const SIDE_OPTIONS: readonly { value: GuestSide; label: string }[] = [
-  { value: 'BRIDE', label: weddingContent.couple.brideName },
-  { value: 'GROOM', label: weddingContent.couple.groomName },
-  { value: 'BOTH', label: 'Wspólny' },
-]
+// "Od kogo" - etykiety stron pochodzą z wydarzenia (events.host_a_label /
+// host_b_label). Bez etykiet wydarzenie nie dzieli gości na strony, a panel
+// ukrywa tę kolumnę.
+export type HostLabels = { hostA: string | null; hostB: string | null }
 
-export const SIDE_LABELS = Object.fromEntries(
-  SIDE_OPTIONS.map(({ value, label }) => [value, label])
-) as Record<GuestSide, string>
+export type SideOptions = {
+  enabled: boolean
+  options: readonly { value: GuestSide; label: string }[]
+  labelOf: (side: GuestSide | null) => string | null
+}
+
+export const buildSideOptions = ({ hostA, hostB }: HostLabels): SideOptions => {
+  const enabled = Boolean(hostA || hostB)
+  const options: { value: GuestSide; label: string }[] = enabled
+    ? [
+        { value: 'HOST_A', label: hostA || 'Strona A' },
+        { value: 'HOST_B', label: hostB || 'Strona B' },
+        { value: 'BOTH', label: 'Wspólny' },
+      ]
+    : []
+  const labels = new Map(options.map(({ value, label }) => [value, label]))
+
+  return { enabled, options, labelOf: (side) => (side ? (labels.get(side) ?? null) : null) }
+}
 
 export const AGE_GROUP_OPTIONS: readonly { value: GuestAgeGroup; label: string }[] = [
   { value: 'ADULT', label: 'Dorosły' },

@@ -2,9 +2,6 @@ export const weddingContent = {
   defaultTitle: 'Nasze wesele',
   couple: {
     names: 'Eunika & Mateusz',
-    // Etykiety kolumny „Od kogo” na liście gości (guests.side).
-    brideName: 'Eunika',
-    groomName: 'Mateusz',
     date: '2 styczeń 2024',
     venue: 'Politechnika Lubelska',
     story:

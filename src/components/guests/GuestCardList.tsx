@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button'
 import { countPl } from '@/lib/plural'
 import {
   AGE_GROUP_LABELS,
-  SIDE_LABELS,
   guestDisplayName,
   type Guest,
   type GuestGroup,
@@ -11,6 +10,7 @@ import {
 import { AttendanceBadge } from './AttendanceBadge'
 import { AddressText, type GuestListActions } from './GuestTable'
 import { sectionTitle, type GuestSection } from './guestSections'
+import { useSideOptions } from './sideOptionsContext'
 
 type GuestCardListProps = GuestListActions & {
   sections: GuestSection[]
@@ -36,10 +36,11 @@ function GuestCard({
   onEdit: (guest: Guest) => void
   onDelete: (guest: Guest) => void
 }) {
+  const sides = useSideOptions()
   const name = guestDisplayName(guest)
   const group = guest.group_id ? groupsById.get(guest.group_id) : undefined
   const meta = [
-    guest.side && SIDE_LABELS[guest.side],
+    sides.labelOf(guest.side),
     guest.age_group !== 'ADULT' && AGE_GROUP_LABELS[guest.age_group],
     guest.is_plus_one && guest.first_name && 'osoba towarzysząca',
     !groupView && group?.name,

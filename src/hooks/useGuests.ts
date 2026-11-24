@@ -8,7 +8,7 @@ import {
   updateGuest,
   updateGuestGroup,
 } from '../lib/guestsApi'
-import type { Guest, GuestGroup, GuestGroupInput, GuestInput } from '../types/guest'
+import type { Guest, GuestGroup, GuestGroupInput, GuestInput, HostLabels } from '../types/guest'
 
 // Lista gości i grup wydarzenia. Zapis aktualizuje stan lokalny wierszem
 // zwróconym przez bazę (bez ponownego pobierania całej listy). Błędy zapisu
@@ -16,6 +16,7 @@ import type { Guest, GuestGroup, GuestGroupInput, GuestInput } from '../types/gu
 export function useGuests(eventId: string | null) {
   const [guests, setGuests] = useState<Guest[]>([])
   const [groups, setGroups] = useState<GuestGroup[]>([])
+  const [hostLabels, setHostLabels] = useState<HostLabels>({ hostA: null, hostB: null })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -31,6 +32,7 @@ export function useGuests(eventId: string | null) {
       const data = await fetchGuestList(eventId)
       setGuests(data.guests)
       setGroups(data.groups)
+      setHostLabels(data.hostLabels)
     } catch (err) {
       console.error('Guest list error:', err)
       setError('Nie udało się pobrać listy gości.')
@@ -98,6 +100,7 @@ export function useGuests(eventId: string | null) {
   return {
     guests,
     groups,
+    hostLabels,
     loading,
     error,
     reload: load,

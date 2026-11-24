@@ -101,6 +101,8 @@ export type Database = {
           access_code_hash: string;
           created_at: string;
           created_by: string | null;
+          host_a_label: string | null;
+          host_b_label: string | null;
           id: string;
           name: string;
           starts_at: string | null;
@@ -110,6 +112,8 @@ export type Database = {
           access_code_hash: string;
           created_at?: string;
           created_by?: string | null;
+          host_a_label?: string | null;
+          host_b_label?: string | null;
           id?: string;
           name: string;
           starts_at?: string | null;
@@ -118,6 +122,8 @@ export type Database = {
           access_code_hash?: string;
           created_at?: string;
           created_by?: string | null;
+          host_a_label?: string | null;
+          host_b_label?: string | null;
           id?: string;
           name?: string;
           starts_at?: string | null;
@@ -622,7 +628,7 @@ export type Database = {
       event_role: "ADMIN" | "EDITOR" | "GUEST";
       expense_status: "PLANNED" | "BOOKED" | "PAID";
       guest_age_group: "ADULT" | "CHILD" | "INFANT";
-      guest_side: "BRIDE" | "GROOM" | "BOTH";
+      guest_side: "HOST_A" | "HOST_B" | "BOTH";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -745,7 +751,7 @@ export const Constants = {
       event_role: ["ADMIN", "EDITOR", "GUEST"],
       expense_status: ["PLANNED", "BOOKED", "PAID"],
       guest_age_group: ["ADULT", "CHILD", "INFANT"],
-      guest_side: ["BRIDE", "GROOM", "BOTH"],
+      guest_side: ["HOST_A", "HOST_B", "BOTH"],
     },
   },
 } as const;

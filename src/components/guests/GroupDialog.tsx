@@ -16,11 +16,11 @@ import { NativeSelect } from '@/components/ui/native-select'
 import { cn } from '@/lib/utils'
 import {
   GUEST_LIMITS,
-  SIDE_OPTIONS,
   type GuestGroup,
   type GuestGroupInput,
   type GuestSide,
 } from '@/types/guest'
+import { useSideOptions } from './sideOptionsContext'
 
 type GroupFormValues = {
   name: string
@@ -39,6 +39,7 @@ type GroupDialogProps = {
 export function GroupDialog({ group, onClose, onSave }: GroupDialogProps) {
   const id = useId()
   const busyRef = useRef(false)
+  const sides = useSideOptions()
   const {
     register,
     handleSubmit,
@@ -136,11 +137,12 @@ export function GroupDialog({ group, onClose, onSave }: GroupDialogProps) {
             )}
           </div>
 
+          {sides.enabled && (
           <div className="flex flex-col gap-1.5">
             <Label htmlFor={`${id}-side`}>Od kogo</Label>
             <NativeSelect id={`${id}-side`} {...register('side')}>
               <option value="">—</option>
-              {SIDE_OPTIONS.map(({ value, label }) => (
+              {sides.options.map(({ value, label }) => (
                 <option key={value} value={value}>
                   {label}
                 </option>
@@ -150,6 +152,7 @@ export function GroupDialog({ group, onClose, onSave }: GroupDialogProps) {
               Domyślna wartość dla nowych osób dodawanych do grupy.
             </p>
           </div>
+          )}
 
           {errors.root?.message && (
             <div role="alert">

@@ -4,6 +4,7 @@ import { Settings } from 'lucide-react'
 import type { SectionNavLink } from '@/components/layout/SectionNav'
 import { CodeEntryScreen } from '@/components/screens/CodeEntryScreen'
 import { EventGalleryScreen } from '@/components/screens/EventGalleryScreen'
+import { GuestsManagementScreen } from '@/components/screens/GuestsManagementScreen'
 import { ManagementScreen } from '@/components/screens/ManagementScreen'
 import { NicknameScreen } from '@/components/screens/NicknameScreen'
 import { weddingContent } from '@/config/weddingContent'
@@ -142,7 +143,20 @@ function App() {
               eventName={session.name}
               nickname={nickname}
               canView={canOpenManagement}
-              canManage={canManage}
+              error={sessionError}
+              onLogout={logout}
+            />
+          }
+        />
+        <Route
+          path={ROUTES.managementGuests}
+          element={
+            <GuestsManagementScreen
+              eventId={session.id}
+              eventName={session.name}
+              nickname={nickname}
+              canView={canOpenManagement}
+              canEdit={canManage}
               error={sessionError}
               onLogout={logout}
             />

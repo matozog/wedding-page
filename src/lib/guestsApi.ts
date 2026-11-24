@@ -5,6 +5,7 @@ import {
   type GuestGroup,
   type GuestGroupInput,
   type GuestInput,
+  type HostLabels,
 } from '../types/guest'
 import { supabase } from './supabase'
 
@@ -26,10 +27,11 @@ const requireRow = <T>(rows: T[] | null): T => {
 
 export const fetchGuestList = async (
   eventId: string
-): Promise<{ guests: Guest[]; groups: GuestGroup[] }> => {
-  const [guestsResult, groupsResult] = await Promise.all([
+): Promise<{ guests: Guest[]; groups: GuestGroup[]; hostLabels: HostLabels }> => {
+  const [guestsResult, groupsResult, eventResult] = await Promise.all([
     supabase.from('guests').select(GUEST_SELECT_FIELDS).eq('event_id', eventId),
     supabase.from('guest_groups').select(GUEST_GROUP_SELECT_FIELDS).eq('event_id', eventId),
+    supabase.from('events').select('host_a_label, host_b_label').eq('id', eventId).maybeSingle(),
   ])
 
   if (guestsResult.error) {
@@ -40,7 +42,34 @@ export const fetchGuestList = async (
     throw groupsResult.error
   }
 
-  return { guests: guestsResult.data ?? [], groups: groupsResult.data ?? [] }
+  if (eventResult.error) {
+    throw eventResult.error
+  }
+
+  return {
+    guests: guestsResult.data ?? [],
+    groups: groupsResult.data ?? [],
+    hostLabels: {
+      hostA: eventResult.data?.host_a_label ?? null,
+      hostB: eventResult.data?.host_b_label ?? null,
+    },
+  }
+}
+
+// Podsumowanie na kafelek panelu zarządzania - tylko statusy i wiek.
+export const fetchGuestSummary = async (
+  eventId: string
+): Promise<Pick<Guest, 'attendance' | 'age_group'>[]> => {
+  const { data, error } = await supabase
+    .from('guests')
+    .select('attendance, age_group')
+    .eq('event_id', eventId)
+
+  if (error) {
+    throw error
+  }
+
+  return data ?? []
 }
 
 export const insertGuest = async (eventId: string, input: GuestInput): Promise<Guest> => {

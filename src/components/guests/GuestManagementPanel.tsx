@@ -1,7 +1,6 @@
-import { Eye, RefreshCw, Users } from 'lucide-react'
+import { Eye, RefreshCw } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
 import { useGuests } from '@/hooks/useGuests'
@@ -17,15 +16,22 @@ import {
   type GuestSort,
 } from '@/lib/guestList'
 import { countPl } from '@/lib/plural'
-import { guestDisplayName, type Guest, type GuestGroup, type GuestInput } from '@/types/guest'
+import {
+  buildSideOptions,
+  guestDisplayName,
+  type Guest,
+  type GuestGroup,
+  type GuestInput,
+} from '@/types/guest'
 import { GroupDialog } from './GroupDialog'
 import { GuestCardList } from './GuestCardList'
 import { GuestEditRow } from './GuestEditRow'
 import { GuestEditSheet } from './GuestEditSheet'
 import { GuestStats } from './GuestStats'
 import { GuestTable, type GuestListEditing } from './GuestTable'
-import { GuestToolbar } from './GuestToolbar'
+import { GuestSearch, GuestToolbar } from './GuestToolbar'
 import { UNGROUPED_KEY, type GuestSection } from './guestSections'
+import { SideOptionsContext } from './sideOptionsContext'
 
 const GROUP_VIEW_KEY = 'guest-list-group-view'
 
@@ -55,6 +61,7 @@ export function GuestManagementPanel({ eventId, canEdit }: GuestManagementPanelP
   const {
     guests,
     groups,
+    hostLabels,
     loading,
     error,
     reload,
@@ -85,11 +92,15 @@ export function GuestManagementPanel({ eventId, canEdit }: GuestManagementPanelP
   // undefined = zamknięte, null = nowa grupa
   const [groupDialog, setGroupDialog] = useState<GuestGroup | null | undefined>(undefined)
 
+  const sideOptions = useMemo(() => buildSideOptions(hostLabels), [hostLabels])
   const groupsById = useMemo(() => new Map(groups.map((group) => [group.id, group])), [groups])
   const sortedGroups = useMemo(() => sortGroups(groups), [groups])
   const stats = useMemo(() => computeGuestStats(guests), [guests])
   const filtered = useMemo(() => filterGuests(guests, filters, groupsById), [guests, filters, groupsById])
-  const sorted = useMemo(() => sortGuests(filtered, sort, groupsById), [filtered, sort, groupsById])
+  const sorted = useMemo(
+    () => sortGuests(filtered, sort, groupsById, sideOptions.labelOf),
+    [filtered, sort, groupsById, sideOptions]
+  )
   const hasFilters = filters.search !== '' || filters.attendance !== '' || filters.side !== ''
 
   const sections = useMemo<GuestSection[]>(() => {
@@ -243,25 +254,24 @@ export function GuestManagementPanel({ eventId, canEdit }: GuestManagementPanelP
     : 0
 
   // --- render -----------------------------------------------------------------
+  // Desktop: panel wypełnia wysokość okna, przewija się tylko tabela
+  // (min. 360 px - niżej przewija się cała strona). Wąski ekran: karty
+  // przewijają się ze stroną, wyszukiwarka zostaje przyklejona u góry.
   return (
-    <Card>
-      <CardHeader className="gap-1">
-        <CardTitle className="flex items-center gap-2">
-          <Users className="size-5 text-primary" aria-hidden="true" />
-          Goście
-        </CardTitle>
-        <CardDescription>
-          Lista gości, rodziny i przewidywana obecność.
-        </CardDescription>
-        {!canEdit && (
-          <p className="mt-2 inline-flex items-center gap-2 text-sm text-muted-foreground">
-            <Eye className="size-4" aria-hidden="true" />
-            Masz dostęp tylko do podglądu listy gości.
-          </p>
-        )}
-      </CardHeader>
+    <SideOptionsContext value={sideOptions}>
+      <section aria-labelledby="guests-title" className="flex flex-col gap-3 lg:min-h-0 lg:flex-1">
+        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+          <h1 id="guests-title" className="font-serif text-3xl leading-tight text-foreground">
+            Goście
+          </h1>
+          {!canEdit && (
+            <p className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Eye className="size-4" aria-hidden="true" />
+              Tylko podgląd
+            </p>
+          )}
+        </div>
 
-      <CardContent className="flex flex-col gap-6">
         {error ? (
           <div className="flex flex-col items-center gap-3 py-8" role="alert">
             <ErrorMessage message={error} />
@@ -282,11 +292,20 @@ export function GuestManagementPanel({ eventId, canEdit }: GuestManagementPanelP
               onSelectAttendance={(attendance) => setFilters((current) => ({ ...current, attendance }))}
             />
 
+            {!isDesktop && (
+              <div className="sticky top-0 z-20 -mx-4 bg-background/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6">
+                <GuestSearch
+                  value={filters.search}
+                  onChange={(search) => setFilters((current) => ({ ...current, search }))}
+                />
+              </div>
+            )}
+
             <GuestToolbar
               filters={filters}
               groupView={groupView}
               sort={sort}
-              showSortSelect={!isDesktop}
+              compact={!isDesktop}
               canEdit={canEdit}
               shownCount={filtered.length}
               totalCount={guests.length}
@@ -302,19 +321,22 @@ export function GuestManagementPanel({ eventId, canEdit }: GuestManagementPanelP
             />
 
             {isDesktop ? (
-              <GuestTable
-                sections={sections}
-                groupView={groupView}
-                groupsById={groupsById}
-                sort={sort}
-                canEdit={canEdit}
-                collapsed={collapsed}
-                editing={editing}
-                emptyMessage={emptyMessage}
-                onSortChange={setSort}
-                renderEditRow={renderEditRow}
-                {...listActions}
-              />
+              <div className="flex min-h-[360px] flex-1 flex-col overflow-hidden rounded-xl border bg-background">
+                <GuestTable
+                  sections={sections}
+                  groupView={groupView}
+                  groupsById={groupsById}
+                  sort={sort}
+                  canEdit={canEdit}
+                  collapsed={collapsed}
+                  editing={editing}
+                  emptyMessage={emptyMessage}
+                  containerClassName="min-h-0 flex-1 overflow-auto"
+                  onSortChange={setSort}
+                  renderEditRow={renderEditRow}
+                  {...listActions}
+                />
+              </div>
             ) : (
               <GuestCardList
                 sections={sections}
@@ -328,7 +350,7 @@ export function GuestManagementPanel({ eventId, canEdit }: GuestManagementPanelP
             )}
           </>
         )}
-      </CardContent>
+      </section>
 
       {!isDesktop && editing && (
         <GuestEditSheet
@@ -431,6 +453,6 @@ export function GuestManagementPanel({ eventId, canEdit }: GuestManagementPanelP
           </label>
         )}
       </ConfirmDialog>
-    </Card>
+    </SideOptionsContext>
   )
 }

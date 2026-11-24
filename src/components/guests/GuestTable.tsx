@@ -16,13 +16,13 @@ import { countPl } from '@/lib/plural'
 import { cn } from '@/lib/utils'
 import {
   AGE_GROUP_LABELS,
-  SIDE_LABELS,
   guestDisplayName,
   type Guest,
   type GuestGroup,
 } from '@/types/guest'
 import { AttendanceBadge } from './AttendanceBadge'
 import { sectionTitle, type GuestSection } from './guestSections'
+import { useSideOptions } from './sideOptionsContext'
 
 export type GuestListEditing =
   | { mode: 'new'; groupId: string | null }
@@ -47,6 +47,8 @@ type GuestTableProps = GuestListActions & {
   collapsed: ReadonlySet<string>
   editing: GuestListEditing
   emptyMessage: string | null
+  // Klasy kontenera przewijania (np. wysokość na cały ekran).
+  containerClassName?: string
   onSortChange: (sort: GuestSort) => void
   renderEditRow: (guest: Guest | null, defaultGroupId: string | null, columnCount: number) => ReactNode
 }
@@ -149,11 +151,12 @@ function GuestRow({
   onEdit: (guest: Guest) => void
   onDelete: (guest: Guest) => void
 }) {
+  const sides = useSideOptions()
   const name = guestDisplayName(guest)
   const group = guest.group_id ? groupsById.get(guest.group_id) : undefined
 
   return (
-    <TableRow className="hover:bg-muted/40" onDoubleClick={canEdit && !actionsDisabled ? () => onEdit(guest) : undefined}>
+    <TableRow className="hover:bg-muted/40 [&>td]:py-1.5" onDoubleClick={canEdit && !actionsDisabled ? () => onEdit(guest) : undefined}>
       <TableCell className={cn(groupView && 'pl-10')}>
         <GuestNameCell guest={guest} />
       </TableCell>
@@ -173,7 +176,9 @@ function GuestRow({
           <span className="text-muted-foreground">—</span>
         )}
       </TableCell>
-      <TableCell>{guest.side ? SIDE_LABELS[guest.side] : <span className="text-muted-foreground">—</span>}</TableCell>
+      {sides.enabled && (
+        <TableCell>{sides.labelOf(guest.side) ?? <span className="text-muted-foreground">—</span>}</TableCell>
+      )}
       <TableCell>
         <AttendanceBadge value={guest.attendance} />
       </TableCell>
@@ -187,7 +192,7 @@ function GuestRow({
               type="button"
               variant="ghost"
               size="icon"
-              className="size-9"
+              className="size-8"
               disabled={actionsDisabled}
               aria-label={`Edytuj: ${name}`}
               title="Edytuj"
@@ -199,7 +204,7 @@ function GuestRow({
               type="button"
               variant="ghost"
               size="icon"
-              className="size-9 text-destructive hover:text-destructive"
+              className="size-8 text-destructive hover:text-destructive"
               aria-label={`Usuń: ${name}`}
               title="Usuń"
               onClick={() => onDelete(guest)}
@@ -228,16 +233,23 @@ function SectionHeaderRow({
   canEdit: boolean
   expanded: boolean
 } & Pick<GuestListActions, 'onToggleCollapsed' | 'onAddToGroup' | 'onEditGroup' | 'onDeleteGroup'>) {
+  const sides = useSideOptions()
   const title = sectionTitle(section)
   const group = section.kind === 'group' ? section.group : null
+  const sideLabel = sides.labelOf(group?.side ?? null)
   const count =
     section.guests.length === section.totalInGroup
       ? countPl(section.totalInGroup, 'osoba', 'osoby', 'osób')
       : `${section.guests.length} z ${section.totalInGroup}`
 
   return (
-    <TableRow className="bg-muted/50">
-      <th scope="rowgroup" colSpan={columnCount} className="px-3 py-2 text-left font-normal">
+    <TableRow>
+      {/* Przyklejony pod nagłówkiem kolumn (h-11) podczas przewijania grupy. */}
+      <th
+        scope="rowgroup"
+        colSpan={columnCount}
+        className="sticky top-11 z-10 bg-muted px-3 py-1.5 text-left font-normal"
+      >
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
           <button
             type="button"
@@ -254,7 +266,7 @@ function SectionHeaderRow({
             {title}
           </button>
           <span className="text-sm text-muted-foreground">{count}</span>
-          {group?.side && <span className="text-sm text-muted-foreground">· {SIDE_LABELS[group.side]}</span>}
+          {sideLabel && <span className="text-sm text-muted-foreground">· {sideLabel}</span>}
           {group?.address && (
             <span className="min-w-0 truncate text-sm text-muted-foreground">· {group.address}</span>
           )}
@@ -314,11 +326,13 @@ export function GuestTable({
   collapsed,
   editing,
   emptyMessage,
+  containerClassName,
   onSortChange,
   renderEditRow,
   ...actions
 }: GuestTableProps) {
-  const columnCount = 6 + (groupView ? 0 : 1) + (canEdit ? 1 : 0)
+  const sides = useSideOptions()
+  const columnCount = 5 + (sides.enabled ? 1 : 0) + (groupView ? 0 : 1) + (canEdit ? 1 : 0)
   const sortProps = { sort, onSortChange }
   const editingId = editing?.mode === 'edit' ? editing.guestId : null
 
@@ -346,14 +360,14 @@ export function GuestTable({
       : null
 
   return (
-    <Table>
-      <TableHeader>
+    <Table containerClassName={containerClassName}>
+      <TableHeader className="sticky top-0 z-20 bg-background shadow-[0_1px_0_hsl(var(--border))]">
         <TableRow>
           <SortableHead label="Imię" sortKey="first_name" className={cn(groupView && 'pl-10')} {...sortProps} />
           <SortableHead label="Nazwisko" sortKey="last_name" {...sortProps} />
           <SortableHead label="Adres" sortKey="address" {...sortProps} />
           <SortableHead label="Telefon" sortKey="phone" {...sortProps} />
-          <SortableHead label="Od kogo" sortKey="side" {...sortProps} />
+          {sides.enabled && <SortableHead label="Od kogo" sortKey="side" {...sortProps} />}
           <SortableHead label="Obecność" sortKey="attendance" {...sortProps} />
           {!groupView && <SortableHead label="Grupa" sortKey="group" {...sortProps} />}
           {canEdit && (

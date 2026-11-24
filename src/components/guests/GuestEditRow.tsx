@@ -15,6 +15,7 @@ import {
   SideField,
 } from './guestFormFields'
 import { useGuestForm, useGuestSubmit, type GuestSaveHandlers } from './guestFormModel'
+import { useSideOptions } from './sideOptionsContext'
 
 type GuestEditRowProps = GuestSaveHandlers & {
   guest: Guest | null
@@ -43,6 +44,7 @@ export function GuestEditRow({
   onSave,
 }: GuestEditRowProps) {
   const idPrefix = useId()
+  const sides = useSideOptions()
   const formId = `${idPrefix}-form`
   const form = useGuestForm({ guest, defaultGroupId, groups, onDirtyChange })
   const { isSubmitting, errors } = form.formState
@@ -91,9 +93,11 @@ export function GuestEditRow({
         <TableCell className="min-w-36 align-top">
           <PhoneField {...fieldProps} />
         </TableCell>
-        <TableCell className="min-w-32 align-top">
-          <SideField {...fieldProps} />
-        </TableCell>
+        {sides.enabled && (
+          <TableCell className="min-w-32 align-top">
+            <SideField {...fieldProps} />
+          </TableCell>
+        )}
         <TableCell className="min-w-40 align-top">
           <AttendanceField {...fieldProps} />
         </TableCell>

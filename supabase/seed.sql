@@ -13,11 +13,13 @@
 -- lost when browser data is cleared. `db reset` wipes users, so repeat after it.
 -- =============================================================================
 
-insert into public.events (id, name, starts_at, access_code_hash)
+insert into public.events (id, name, starts_at, access_code_hash, host_a_label, host_b_label)
 values (
   '00000000-0000-0000-0000-0000000000e1',
   'Wesele testowe',
   '2027-06-12 16:00:00+02',
-  extensions.crypt(public.normalize_access_code('TEST123'), extensions.gen_salt('bf'))
+  extensions.crypt(public.normalize_access_code('TEST123'), extensions.gen_salt('bf')),
+  'Panna młoda',
+  'Pan młody'
 )
 on conflict (id) do nothing;
