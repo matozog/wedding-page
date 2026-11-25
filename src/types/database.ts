@@ -767,6 +767,7 @@ export type Database = {
           height: number;
           id: string;
           label: string;
+          position: number;
           rotation: number;
           width: number;
           x: number;
@@ -779,6 +780,7 @@ export type Database = {
           height: number;
           id?: string;
           label: string;
+          position?: number;
           rotation?: number;
           width: number;
           x: number;
@@ -790,6 +792,7 @@ export type Database = {
           height?: number;
           id?: string;
           label?: string;
+          position?: number;
           rotation?: number;
           width?: number;
           x?: number;

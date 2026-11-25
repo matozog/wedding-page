@@ -10,7 +10,7 @@ import { SiteHeader } from '@/components/layout/SiteHeader'
 import { PhotoGallery } from '@/components/photos/PhotoGallery'
 import { Button } from '@/components/ui/button'
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
-import { SECTION_NAV_ITEMS } from '@/config/navigation'
+import { SECTION_IDS, SECTION_NAV_ITEMS } from '@/config/navigation'
 import { useSeatingPlan } from '@/hooks/useSeatingPlan'
 import type { EventPage, EventSectionKey } from '@/types/eventPage'
 import type { Photo } from '@/types/photo'
@@ -85,8 +85,10 @@ export function EventGalleryScreen({
   onLogout,
 }: EventGalleryScreenProps) {
   const seatingEnabled = page?.sections.seating?.is_visible ? page.event.id : null
-  const { plan: seatingPlan } = useSeatingPlan(seatingEnabled)
-  const hasSeatingPlan = seatingPlan !== null && seatingPlan.tables.length > 0
+  const { plan: seatingPlan, failed: seatingFailed, retry: retrySeating } = useSeatingPlan(seatingEnabled)
+  // Błąd pobrania też pokazuje sekcję (z komunikatem) - inaczej wyglądałby
+  // jak brak planu.
+  const hasSeatingPlan = (seatingPlan !== null && seatingPlan.tables.length > 0) || seatingFailed
   const visible = useMemo(() => visibleSections(page, hasSeatingPlan), [page, hasSeatingPlan])
   const aboutPhotos = useMemo(() => page?.photos.filter((photo) => photo.section === 'couple') ?? [], [page])
   const navItems = useMemo(
@@ -134,6 +136,14 @@ export function EventGalleryScreen({
           )}
           {visible.has('schedule') && (
             <WeddingScheduleSection header={page.sections.schedule} items={page.schedule} />
+          )}
+          {visible.has('seating') && seatingFailed && (
+            <section id={SECTION_IDS.seating} className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-14" role="alert">
+              <ErrorMessage message="Nie udało się wczytać planu sali." />
+              <Button type="button" variant="outline" onClick={retrySeating}>
+                Spróbuj ponownie
+              </Button>
+            </section>
           )}
           {visible.has('seating') && seatingPlan && (
             <Suspense fallback={null}>

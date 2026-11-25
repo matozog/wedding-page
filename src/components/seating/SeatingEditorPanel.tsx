@@ -1,5 +1,5 @@
 import { Eye, EyeOff, Loader2, Maximize, RefreshCw, Save, Undo2, UserMinus, UserPen } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AttendanceBadge } from '@/components/guests/AttendanceBadge'
 import { GuestEditSheet } from '@/components/guests/GuestEditSheet'
 import { InviterOptionsContext } from '@/components/guests/inviterOptionsContext'
@@ -53,9 +53,11 @@ const normalizeAngle = (value: number) => (((value % 360) + 360) % 360) % 360
 
 type SeatingEditorPanelProps = {
   eventId: string
+  // Niezapisany układ - ekran pyta przed wylogowaniem.
+  onDirtyChange?: (dirty: boolean) => void
 }
 
-export function SeatingEditorPanel({ eventId }: SeatingEditorPanelProps) {
+export function SeatingEditorPanel({ eventId, onDirtyChange }: SeatingEditorPanelProps) {
   const editor = useSeatingEditor(eventId)
   const {
     draft,
@@ -84,6 +86,14 @@ export function SeatingEditorPanel({ eventId }: SeatingEditorPanelProps) {
   const [actionError, setActionError] = useState<string | null>(null)
   const [pendingUnseat, setPendingUnseat] = useState<UnseatedGuest[] | null>(null)
   const [publishing, setPublishing] = useState(false)
+  // Informacja po zmianie miejsc (np. ktoś trafił do nieusadzonych).
+  const [notice, setNotice] = useState<string | null>(null)
+  // Link kliknięty przy niezapisanym układzie - czeka na potwierdzenie.
+  const [pendingLink, setPendingLink] = useState<HTMLAnchorElement | null>(null)
+  const allowLinkRef = useRef(false)
+  // Edycja gościa w arkuszu - zamknięcie z niezapisanymi zmianami pyta.
+  const guestDirtyRef = useRef(false)
+  const [confirmCloseGuest, setConfirmCloseGuest] = useState(false)
 
   // Niezapisany układ - ostrzeżenie przy zamknięciu karty.
   useEffect(() => {
@@ -91,6 +101,30 @@ export function SeatingEditorPanel({ eventId }: SeatingEditorPanelProps) {
     const handler = (event: BeforeUnloadEvent) => event.preventDefault()
     window.addEventListener('beforeunload', handler)
     return () => window.removeEventListener('beforeunload', handler)
+  }, [dirty])
+
+  useEffect(() => {
+    onDirtyChange?.(dirty)
+  }, [dirty, onDirtyChange])
+
+  // Linki aplikacji (ścieżka, "Strona wydarzenia") zmieniają widok bez
+  // przeładowania - beforeunload ich nie łapie. BrowserRouter nie ma
+  // useBlocker, więc przechwytujemy kliknięcie przed obsługą routera.
+  useEffect(() => {
+    if (!dirty) return
+    const handler = (event: MouseEvent) => {
+      if (allowLinkRef.current) return
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+      const link = event.target instanceof Element ? event.target.closest('a[href]') : null
+      if (!(link instanceof HTMLAnchorElement) || link.target === '_blank' || link.origin !== window.location.origin) {
+        return
+      }
+      event.preventDefault()
+      event.stopPropagation()
+      setPendingLink(link)
+    }
+    document.addEventListener('click', handler, true)
+    return () => document.removeEventListener('click', handler, true)
   }, [dirty])
 
   const inviterOptions = useMemo(() => buildInviterOptions(guests), [guests])
@@ -138,20 +172,40 @@ export function SeatingEditorPanel({ eventId }: SeatingEditorPanelProps) {
 
   const selectedTable = draft.tables.find((table) => table.id === selectedId) ?? null
   const selectedLandmark = draft.landmarks.find((item) => item.id === selectedId) ?? null
-  const seatOccupant = selectedSeat ? (guestBySeat.get(seatKey(selectedSeat.tableId, selectedSeat.seatNumber)) ?? null) : null
+  // Wybrane krzesło przestaje obowiązywać, gdy stołu nie ma (usunięty,
+  // odrzucony szkic) albo czeka na zapis układu.
+  const activeSeat =
+    selectedSeat && tableNames.has(selectedSeat.tableId) && !inactiveTables.has(selectedSeat.tableId)
+      ? selectedSeat
+      : null
+  const seatOccupant = activeSeat ? (guestBySeat.get(seatKey(activeSeat.tableId, activeSeat.seatNumber)) ?? null) : null
   const editedGuest = guests.find((guest) => guest.id === editedGuestId) ?? null
   const seatedCountAt = (tableId: string) => guests.filter((guest) => guest.table_id === tableId).length
   const seatedTotal = guests.filter((guest) => guest.table_id).length
   const capacityTotal = draft.tables.reduce((sum, table) => sum + table.capacity, 0)
 
   // --- akcje ------------------------------------------------------------------
+  // Zajęte miejsce = zamiana. Gdy nowa osoba nie miała miejsca, poprzednia
+  // trafia do nieusadzonych - mówimy o tym wprost.
   const runAssign = async (guestId: string, tableId: string | null, seatNumber: number | null) => {
     setActionError(null)
+    setNotice(null)
+    const guest = guests.find((item) => item.id === guestId)
+    const occupant = tableId && seatNumber ? guestBySeat.get(seatKey(tableId, seatNumber)) : undefined
     try {
       await editor.assign(guestId, tableId, seatNumber)
+      if (guest && occupant && occupant.id !== guest.id) {
+        setNotice(
+          guest.table_id
+            ? `${guestDisplayName(occupant)} i ${guestDisplayName(guest)} zamienili się miejscami.`
+            : `${guestDisplayName(occupant)} trafia do nieusadzonych - miejsce zajmuje ${guestDisplayName(guest)}.`
+        )
+      }
+      return true
     } catch (err) {
       console.error(err)
       setActionError('Nie udało się zmienić miejsca. Odświeżyliśmy listę gości.')
+      return false
     }
   }
 
@@ -166,8 +220,12 @@ export function SeatingEditorPanel({ eventId }: SeatingEditorPanelProps) {
   }
 
   const handleGuestClick = (guest: SeatedGuest) => {
-    if (selectedSeat) {
-      void runAssign(guest.id, selectedSeat.tableId, selectedSeat.seatNumber)
+    if (activeSeat) {
+      // Po przypisaniu krzesło nie jest już wybrane - kolejne kliknięcie
+      // gościa nie podmieni osoby, którą właśnie posadzono.
+      void runAssign(guest.id, activeSeat.tableId, activeSeat.seatNumber).then((ok) => {
+        if (ok) setSelectedSeat(null)
+      })
       return
     }
     if (guest.table_id && guest.seat_number) {
@@ -265,7 +323,7 @@ export function SeatingEditorPanel({ eventId }: SeatingEditorPanelProps) {
       landmarks={draft.landmarks}
       seatVisual={seatVisual}
       selectedId={isDesktop ? selectedId : null}
-      selectedSeat={selectedSeat ? seatKey(selectedSeat.tableId, selectedSeat.seatNumber) : null}
+      selectedSeat={activeSeat ? seatKey(activeSeat.tableId, activeSeat.seatNumber) : null}
       inactiveTables={isDesktop ? inactiveTables : undefined}
       editable={isDesktop}
       fit={isDesktop ? 'contain' : 'width'}
@@ -376,6 +434,9 @@ export function SeatingEditorPanel({ eventId }: SeatingEditorPanelProps) {
             </div>
 
             {actionError && <ErrorMessage message={actionError} />}
+            <p className="text-sm text-foreground empty:hidden" aria-live="polite">
+              {notice}
+            </p>
 
             <div className="grid min-h-[560px] flex-1 grid-cols-[minmax(0,1fr)_22rem] gap-3 lg:min-h-0">
               <div className="flex min-h-0 flex-col gap-2">
@@ -437,11 +498,11 @@ export function SeatingEditorPanel({ eventId }: SeatingEditorPanelProps) {
                       }}
                     />
                   </div>
-                ) : selectedSeat ? (
+                ) : activeSeat ? (
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between gap-2">
                       <h2 className="font-medium text-foreground">
-                        {tableNames.get(selectedSeat.tableId)} · miejsce {selectedSeat.seatNumber}
+                        {tableNames.get(activeSeat.tableId)} · miejsce {activeSeat.seatNumber}
                       </h2>
                       <Button type="button" size="sm" variant="ghost" onClick={() => setSelectedSeat(null)}>
                         Zamknij
@@ -486,7 +547,7 @@ export function SeatingEditorPanel({ eventId }: SeatingEditorPanelProps) {
                   tableNames={tableNames}
                   colorOf={colorOf}
                   highlightedGroupId={highlightedGroupId}
-                  seatSelected={selectedSeat !== null}
+                  seatSelected={activeSeat !== null}
                   canDrag
                   onGuestClick={handleGuestClick}
                   onHighlightGroup={setHighlightedGroupId}
@@ -505,15 +566,51 @@ export function SeatingEditorPanel({ eventId }: SeatingEditorPanelProps) {
           guest={editedGuest}
           defaultGroupId={editedGuest.group_id}
           groups={groups}
-          onCancel={() => setEditedGuestId(null)}
-          onDirtyChange={() => undefined}
+          onCancel={() => {
+            if (guestDirtyRef.current) setConfirmCloseGuest(true)
+            else setEditedGuestId(null)
+          }}
+          onDirtyChange={(value) => {
+            guestDirtyRef.current = value
+          }}
           onCreateGroup={editor.createGroup}
           onSave={async (input) => {
             await editor.saveGuest(editedGuest.id, input)
+            guestDirtyRef.current = false
             setEditedGuestId(null)
           }}
         />
       )}
+
+      <ConfirmDialog
+        open={confirmCloseGuest}
+        title="Porzucić zmiany?"
+        description="Dane gościa mają niezapisane zmiany."
+        confirmLabel="Porzuć zmiany"
+        destructive
+        onOpenChange={(open) => !open && setConfirmCloseGuest(false)}
+        onConfirm={() => {
+          guestDirtyRef.current = false
+          setEditedGuestId(null)
+        }}
+      />
+
+      <ConfirmDialog
+        open={pendingLink !== null}
+        title="Opuścić edytor?"
+        description="Układ sali ma niezapisane zmiany. Po wyjściu przepadną."
+        confirmLabel="Wyjdź bez zapisu"
+        destructive
+        onOpenChange={(open) => !open && setPendingLink(null)}
+        onConfirm={() => {
+          const link = pendingLink
+          setPendingLink(null)
+          if (!link) return
+          allowLinkRef.current = true
+          link.click()
+          allowLinkRef.current = false
+        }}
+      />
 
       <ConfirmDialog
         open={pendingUnseat !== null}

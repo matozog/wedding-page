@@ -30,6 +30,8 @@ create type public.seating_table_shape as enum ('RECT', 'L', 'U');
 -- seating_tables - layout columns
 -- -----------------------------------------------------------------------------
 update public.seating_tables set capacity = 8 where capacity is null;
+-- the new limit - older rows had no upper bound
+update public.seating_tables set capacity = 60 where capacity > 60;
 
 alter table public.seating_tables
   alter column capacity set not null,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { fetchSeatingPlan } from '../lib/seatingApi'
 import type { SeatingPlan } from '../types/seating'
 
@@ -10,6 +10,8 @@ export function useSeatingPlan(eventId: string | null) {
     plan: null,
     failed: false,
   })
+  // Zwiększenie wymusza ponowne pobranie (przycisk "Spróbuj ponownie").
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     if (!eventId) return
@@ -27,8 +29,9 @@ export function useSeatingPlan(eventId: string | null) {
     return () => {
       cancelled = true
     }
-  }, [eventId])
+  }, [eventId, attempt])
 
+  const retry = useCallback(() => setAttempt((value) => value + 1), [])
   const current = state.eventId === eventId ? state : null
-  return { plan: current?.plan ?? null, failed: current?.failed ?? false }
+  return { plan: current?.plan ?? null, failed: current?.failed ?? false, retry }
 }

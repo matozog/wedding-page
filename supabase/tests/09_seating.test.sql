@@ -71,6 +71,19 @@ select ok((select shape = 'L' and rotation = 90 and capacity = 6 from public.sea
 select ok((select width = 2400 and not is_published from public.seating_rooms where event_id = :'ev'), 'room stored, not published');
 select ok((select count(*) = 1 from public.seating_landmarks where event_id = :'ev'), 'landmark stored');
 
+-- landmark drawing order follows the saved list
+select public.save_seating_layout(
+  :'ev', '{"width": 2400, "height": 1400}',
+  format('[{"id": "%s", "name": "Stół 1", "shape": "RECT", "capacity": 4, "x": 500, "y": 400, "rotation": 0, "seat_config": {"sides": "both"}},
+           {"id": "%s", "name": "Stół 2", "shape": "L", "capacity": 6, "x": 1200, "y": 400, "rotation": 90, "seat_config": {}}]', :'t1', :'t2')::jsonb,
+  '[{"label": "Scena", "x": 100, "y": 100, "width": 400, "height": 200, "rotation": 0},
+    {"label": "Parkiet", "x": 200, "y": 200, "width": 400, "height": 200, "rotation": 0},
+    {"label": "Bar", "x": 300, "y": 300, "width": 100, "height": 100, "rotation": 0}]'
+) \g /dev/null
+select is(
+  (select string_agg(l ->> 'label', ',') from jsonb_array_elements(public.get_seating_plan(:'ev') -> 'landmarks') l),
+  'Scena,Parkiet,Bar', 'landmarks returned in saved order');
+
 -- assign_seat ---------------------------------------------------------------------
 select lives_ok(format($$select public.assign_seat(%L, %L, 1)$$, :'g1', :'t1'), 'editor seats a guest');
 select lives_ok(format($$select public.assign_seat(%L, %L, 4)$$, :'g2', :'t1'), 'editor seats second guest');

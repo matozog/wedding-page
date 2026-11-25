@@ -157,9 +157,12 @@ export function SeatingCanvas({
 
   const zoomBy = (factor: number) => zoomAt(factor, { x: stageWidth / 2, y: stageHeight / 2 })
 
-  // Przybliżenie do wskazanego stołu / krzesła (wyszukiwarka).
+  // Przybliżenie do wskazanego stołu / krzesła (wyszukiwarka). Każde żądanie
+  // (nonce) tylko raz - zmiana rozmiaru okna nie wraca do starego miejsca.
+  const appliedFocusRef = useRef<number | null>(null)
   useEffect(() => {
-    if (!focus || baseScale === 0) return
+    if (!focus || baseScale === 0 || appliedFocusRef.current === focus.nonce) return
+    appliedFocusRef.current = focus.nonce
     const table = tables.find((item) => item.id === focus.tableId)
     if (!table) return
     const geometry = tableGeometry(table.shape, table.capacity, table.seat_config)
@@ -304,19 +307,21 @@ export function SeatingCanvas({
   return (
     <div
       ref={containerRef}
-      className={cn(
-        'relative overflow-hidden rounded-xl border border-border/60 bg-secondary/30 outline-none focus-visible:ring-2 focus-visible:ring-ring',
-        className
-      )}
+      className={cn('relative overflow-hidden rounded-xl border border-border/60 bg-secondary/30', className)}
       style={fit === 'width' ? { height: ready ? stageHeight : undefined, aspectRatio: ready ? undefined : `${room.width} / ${room.height}` } : undefined}
-      role="img"
-      aria-label={ariaLabel}
-      tabIndex={editable ? 0 : undefined}
-      onKeyDown={handleKeyDown}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       onMouseLeave={() => setHover(null)}
     >
+      {/* role="img" tylko na rysunku - przyciski zoomu poza nim, bo
+          potomkowie elementu img są ukryci przed czytnikami ekranu. */}
+      <div
+        role="img"
+        aria-label={ariaLabel}
+        tabIndex={editable ? 0 : undefined}
+        onKeyDown={handleKeyDown}
+        className="absolute inset-0 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+      >
       {ready && (
         <Stage
           ref={stageRef}
@@ -583,6 +588,7 @@ export function SeatingCanvas({
           {hover.text}
         </div>
       )}
+      </div>
 
       <div className="absolute right-2 bottom-2 flex flex-col gap-1">
         <Button type="button" size="icon" variant="outline" className="size-8 bg-background/90" aria-label="Przybliż plan" onClick={() => zoomBy(1.4)}>

@@ -182,8 +182,16 @@ export function useSeatingEditor(eventId: string) {
     setDraft((current) => ({ ...current, landmarks: current.landmarks.filter((item) => item.id !== id) }))
   }, [])
 
+  // Mniejsza sala - stoły i elementy spoza niej wracają na krawędź (edytor
+  // pokazuje tylko salę, więc inaczej nie dałoby się ich złapać).
   const setRoom = useCallback((room: SeatingRoom) => {
-    setDraft((current) => ({ ...current, room }))
+    const clampX = (x: number) => Math.min(Math.max(x, 0), room.width)
+    const clampY = (y: number) => Math.min(Math.max(y, 0), room.height)
+    setDraft((current) => ({
+      room,
+      tables: current.tables.map((table) => ({ ...table, x: clampX(table.x), y: clampY(table.y) })),
+      landmarks: current.landmarks.map((item) => ({ ...item, x: clampX(item.x), y: clampY(item.y) })),
+    }))
   }, [])
 
   const discard = useCallback(() => setDraft(saved), [saved])

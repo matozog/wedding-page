@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { ManagementLayout } from '@/components/layout/ManagementLayout'
 import { SeatingEditorPanel } from '@/components/seating/SeatingEditorPanel'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { ROUTES } from '@/lib/routes'
 
 type SeatingManagementScreenProps = {
@@ -20,6 +22,9 @@ export function SeatingManagementScreen({
   error,
   onLogout,
 }: SeatingManagementScreenProps) {
+  const [dirty, setDirty] = useState(false)
+  const [confirmLogout, setConfirmLogout] = useState(false)
+
   return (
     <ManagementLayout
       eventName={eventName}
@@ -28,9 +33,18 @@ export function SeatingManagementScreen({
       error={error}
       breadcrumbs={[{ label: 'Zarządzanie', to: ROUTES.management }, { label: 'Plan sali' }]}
       fillViewport
-      onLogout={onLogout}
+      onLogout={() => (dirty ? setConfirmLogout(true) : onLogout())}
     >
-      <SeatingEditorPanel eventId={eventId} />
+      <SeatingEditorPanel eventId={eventId} onDirtyChange={setDirty} />
+      <ConfirmDialog
+        open={confirmLogout}
+        title="Wylogować się?"
+        description="Układ sali ma niezapisane zmiany. Po wylogowaniu przepadną."
+        confirmLabel="Wyloguj bez zapisu"
+        destructive
+        onOpenChange={(open) => !open && setConfirmLogout(false)}
+        onConfirm={onLogout}
+      />
     </ManagementLayout>
   )
 }
