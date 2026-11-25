@@ -11,18 +11,26 @@ export function useEventPage(eventId: string | null) {
   const [notFound, setNotFound] = useState(false)
   // Odpowiedź dla poprzedniego wydarzenia nie nadpisuje stanu.
   const loadIdRef = useRef(0)
+  // Wydarzenie, którego strona jest w stanie - przy zmianie stara strona znika,
+  // przy ponownym wczytaniu tego samego zostaje na ekranie.
+  const loadedEventIdRef = useRef<string | null>(null)
 
   const reload = useCallback(async () => {
     const loadId = ++loadIdRef.current
+    setNotFound(false)
+    setError(null)
+
+    if (loadedEventIdRef.current !== eventId) {
+      loadedEventIdRef.current = eventId
+      setPage(null)
+    }
 
     if (!eventId) {
-      setPage(null)
       setLoading(false)
       return
     }
 
     setLoading(true)
-    setError(null)
 
     try {
       const value = await fetchEventPage(eventId)

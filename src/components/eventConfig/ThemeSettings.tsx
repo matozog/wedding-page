@@ -42,7 +42,11 @@ export function ThemeSettings({ eventId, eventName, theme, onSaved }: ThemeSetti
   const [error, setError] = useState<string | null>(null)
   const timerRef = useRef<number | null>(null)
   const pendingRef = useRef<ThemeKey | null>(null)
+  // Ostatni potwierdzony przez bazę i ostatni wysłany motyw. Zapisy idą po
+  // kolei (queueRef), więc ostatni wybór zawsze trafia do bazy jako ostatni.
   const savedRef = useRef(theme)
+  const requestedRef = useRef(theme)
+  const queueRef = useRef<Promise<void>>(Promise.resolve())
   const onSavedRef = useRef(onSaved)
 
   useEffect(() => {
@@ -54,8 +58,10 @@ export function ThemeSettings({ eventId, eventName, theme, onSaved }: ThemeSetti
     () => () => {
       const pending = pendingRef.current
       if (timerRef.current !== null) window.clearTimeout(timerRef.current)
-      if (pending && pending !== savedRef.current) {
-        setEventTheme(eventId, pending)
+      if (pending && pending !== requestedRef.current) {
+        requestedRef.current = pending
+        queueRef.current = queueRef.current
+          .then(() => setEventTheme(eventId, pending))
           .then(() => onSavedRef.current(pending))
           .catch((err) => console.error('Theme save error:', err))
       }
@@ -63,22 +69,30 @@ export function ThemeSettings({ eventId, eventName, theme, onSaved }: ThemeSetti
     [eventId]
   )
 
-  const save = async (key: ThemeKey) => {
-    if (key === savedRef.current) return
+  const save = (key: ThemeKey) => {
+    if (key === requestedRef.current) return
+    requestedRef.current = key
     setSaving(true)
     setError(null)
 
-    try {
-      await setEventTheme(eventId, key)
-      savedRef.current = key
-      onSavedRef.current(key)
-    } catch (err) {
-      console.error(err)
-      setError(describeSaveError(err, 'Nie udało się zmienić motywu.'))
-      setSelected(savedRef.current)
-    } finally {
-      setSaving(false)
-    }
+    queueRef.current = queueRef.current.then(async () => {
+      const isLatest = () => requestedRef.current === key
+      try {
+        await setEventTheme(eventId, key)
+        savedRef.current = key
+        if (isLatest()) onSavedRef.current(key)
+      } catch (err) {
+        console.error(err)
+        if (isLatest()) {
+          setError(describeSaveError(err, 'Nie udało się zmienić motywu.'))
+          requestedRef.current = savedRef.current
+          setSelected(savedRef.current)
+          onSavedRef.current(savedRef.current)
+        }
+      } finally {
+        if (isLatest()) setSaving(false)
+      }
+    })
   }
 
   const choose = (key: ThemeKey) => {
@@ -88,7 +102,7 @@ export function ThemeSettings({ eventId, eventName, theme, onSaved }: ThemeSetti
     timerRef.current = window.setTimeout(() => {
       timerRef.current = null
       pendingRef.current = null
-      void save(key)
+      save(key)
     }, SAVE_DELAY_MS)
   }
 

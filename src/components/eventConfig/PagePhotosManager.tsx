@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowUp, ImagePlus, Loader2, Trash2 } from 'lucide-react'
-import { useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { describeSaveError } from '@/components/events/eventFormat'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -31,6 +31,12 @@ export function PagePhotosManager({ eventId, photos, onChange }: PagePhotosManag
   const [error, setError] = useState<string | null>(null)
   const [savedOrder, setSavedOrder] = useState(false)
   const [toDelete, setToDelete] = useState<PagePhoto | null>(null)
+  // Najnowsza zapisana lista - przesyłanie kilku plików i usuwanie budują
+  // kolejny stan z niej, a nie z wartości z chwili rozpoczęcia operacji.
+  const photosRef = useRef(photos)
+  useEffect(() => {
+    photosRef.current = photos
+  }, [photos])
   // Miniatury z zapisanej listy - zmiana opisu w szkicu nie tworzy nowych adresów.
   const thumbnails = usePagePhotoUrls(photos, 'thumbnail')
   const srcById = new Map(thumbnails.map((photo) => [photo.id, photo.src]))
@@ -46,6 +52,7 @@ export function PagePhotosManager({ eventId, photos, onChange }: PagePhotosManag
   // Rodzic dostaje tylko zapisany stan - niezapisane opisy i kolejność
   // zostają w szkicu.
   const commit = (saved: PagePhoto[], nextDraft: (current: PagePhoto[]) => PagePhoto[]) => {
+    photosRef.current = saved
     setDraft(nextDraft)
     onChange(saved)
   }
@@ -67,12 +74,10 @@ export function PagePhotosManager({ eventId, photos, onChange }: PagePhotosManag
     if (accepted.length === 0) return
     setBusy('upload')
 
-    let saved = [...photos]
     try {
       for (const file of accepted) {
         const photo = await uploadEventPagePhoto(eventId, file, null)
-        saved = [...saved, photo]
-        commit(saved, (current) => [...current, photo])
+        commit([...photosRef.current, photo], (current) => [...current, photo])
       }
     } catch (err) {
       console.error(err)
@@ -113,9 +118,11 @@ export function PagePhotosManager({ eventId, photos, onChange }: PagePhotosManag
   }
 
   const remove = async (photo: PagePhoto) => {
+    // Usuwanie w trakcie przesyłania lub zapisu kolejności rozjechałoby listy.
+    if (busy) throw new Error('Poczekaj na zakończenie trwającej operacji.')
     await deleteEventPagePhoto(photo.id)
     commit(
-      photos.filter((item) => item.id !== photo.id),
+      photosRef.current.filter((item) => item.id !== photo.id),
       (current) => current.filter((item) => item.id !== photo.id)
     )
   }
@@ -217,6 +224,7 @@ export function PagePhotosManager({ eventId, photos, onChange }: PagePhotosManag
                     variant="ghost"
                     size="icon"
                     className="size-8 text-destructive hover:text-destructive"
+                    disabled={busy !== null}
                     aria-label={`Usuń zdjęcie ${index + 1}`}
                     title="Usuń"
                     onClick={() => setToDelete(photo)}
