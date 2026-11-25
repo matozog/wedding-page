@@ -1,11 +1,13 @@
 import { Loader2, Plus, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
+import { useNavigate } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
 import { useAdminEvents } from '@/hooks/useAdminEvents'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { countPl } from '@/lib/plural'
-import type { AdminEvent, AdminEventInput } from '@/types/adminEvent'
+import { eventConfigPath } from '@/lib/routes'
+import type { AdminEvent } from '@/types/adminEvent'
 import type { EventPreview } from '@/types/event'
 import { AccessCodeDialog } from './AccessCodeDialog'
 import { DeleteEventDialog } from './DeleteEventDialog'
@@ -20,10 +22,7 @@ type EventsPanelProps = {
   onEventChanged: (eventId: string, event: EventPreview | null) => void
 }
 
-type OpenDialog =
-  | { kind: 'form'; event: AdminEvent | null }
-  | { kind: 'code' | 'delete' | 'members'; event: AdminEvent }
-  | null
+type OpenDialog = { kind: 'create' } | { kind: 'code' | 'delete' | 'members'; event: AdminEvent } | null
 
 const toPreview = (event: AdminEvent): EventPreview => ({
   id: event.id,
@@ -33,16 +32,12 @@ const toPreview = (event: AdminEvent): EventPreview => ({
 
 // Wszystkie wydarzenia - tylko super admin (każde RPC sprawdza to w bazie).
 export function EventsPanel({ currentEventId, onEnter, onEventChanged }: EventsPanelProps) {
-  const { events, loading, error, reload, addEvent, editEvent, changeAccessCode, removeEvent } = useAdminEvents()
+  const { events, loading, error, reload, addEvent, changeAccessCode, removeEvent } = useAdminEvents()
+  const navigate = useNavigate()
   const isDesktop = useMediaQuery('(min-width: 1024px)')
   const [dialog, setDialog] = useState<OpenDialog>(null)
 
   const close = () => setDialog(null)
-
-  const handleUpdate = async (eventId: string, input: AdminEventInput) => {
-    await editEvent(eventId, input)
-    onEventChanged(eventId, { id: eventId, name: input.name, startsAt: input.startsAt })
-  }
 
   const handleDelete = async (eventId: string) => {
     await removeEvent(eventId)
@@ -51,7 +46,7 @@ export function EventsPanel({ currentEventId, onEnter, onEventChanged }: EventsP
 
   const actions = {
     onEnter: (event: AdminEvent) => onEnter(toPreview(event)),
-    onEdit: (event: AdminEvent) => setDialog({ kind: 'form', event }),
+    onEdit: (event: AdminEvent) => navigate(eventConfigPath(event.id)),
     onMembers: (event: AdminEvent) => setDialog({ kind: 'members', event }),
     onAccessCode: (event: AdminEvent) => setDialog({ kind: 'code', event }),
     onDelete: (event: AdminEvent) => setDialog({ kind: 'delete', event }),
@@ -81,7 +76,7 @@ export function EventsPanel({ currentEventId, onEnter, onEventChanged }: EventsP
         >
           <RefreshCw className={loading ? 'size-4 animate-spin' : 'size-4'} />
         </Button>
-        <Button type="button" onClick={() => setDialog({ kind: 'form', event: null })}>
+        <Button type="button" onClick={() => setDialog({ kind: 'create' })}>
           <Plus className="size-4" aria-hidden="true" />
           Nowe wydarzenie
         </Button>
@@ -111,8 +106,12 @@ export function EventsPanel({ currentEventId, onEnter, onEventChanged }: EventsP
         <EventCardList events={events} currentEventId={currentEventId} {...actions} />
       )}
 
-      {dialog?.kind === 'form' && (
-        <EventFormDialog event={dialog.event} onClose={close} onCreate={addEvent} onUpdate={handleUpdate} />
+      {dialog?.kind === 'create' && (
+        <EventFormDialog
+          onClose={close}
+          onCreate={addEvent}
+          onCreated={(eventId) => navigate(eventConfigPath(eventId))}
+        />
       )}
       {dialog?.kind === 'code' && (
         <AccessCodeDialog event={dialog.event} onClose={close} onSave={changeAccessCode} />

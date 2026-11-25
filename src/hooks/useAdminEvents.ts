@@ -4,7 +4,6 @@ import {
   deleteAdminEvent,
   fetchAdminEvents,
   setAdminEventAccessCode,
-  updateAdminEvent,
 } from '../lib/eventsAdminApi'
 import type { AdminEvent, AdminEventInput } from '../types/adminEvent'
 
@@ -43,14 +42,6 @@ export function useAdminEvents() {
     [reload]
   )
 
-  const editEvent = useCallback(
-    async (eventId: string, input: AdminEventInput) => {
-      await updateAdminEvent(eventId, input)
-      await reload()
-    },
-    [reload]
-  )
-
   const changeAccessCode = useCallback(async (eventId: string, accessCode: string) => {
     await setAdminEventAccessCode(eventId, accessCode)
   }, [])
@@ -63,5 +54,5 @@ export function useAdminEvents() {
     [reload]
   )
 
-  return { events, loading, error, reload, addEvent, editEvent, changeAccessCode, removeEvent }
+  return { events, loading, error, reload, addEvent, changeAccessCode, removeEvent }
 }

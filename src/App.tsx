@@ -1,15 +1,18 @@
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { Navigate, Route, Routes, useMatch, useNavigate } from 'react-router'
 import { CalendarCog, Settings } from 'lucide-react'
 import type { SectionNavLink } from '@/components/layout/SectionNav'
 import { CodeEntryScreen } from '@/components/screens/CodeEntryScreen'
+import { EventConfigScreen } from '@/components/screens/EventConfigScreen'
 import { EventGalleryScreen } from '@/components/screens/EventGalleryScreen'
 import { EventsManagementScreen } from '@/components/screens/EventsManagementScreen'
 import { ExpensesManagementScreen } from '@/components/screens/ExpensesManagementScreen'
 import { GuestsManagementScreen } from '@/components/screens/GuestsManagementScreen'
 import { ManagementScreen } from '@/components/screens/ManagementScreen'
 import { NicknameScreen } from '@/components/screens/NicknameScreen'
+import type { OrganizerAccess } from '@/components/screens/OrganizerGate'
 import { weddingContent } from '@/config/weddingContent'
+import { useEventPage } from '@/hooks/useEventPage'
 import { useEventSession } from '@/hooks/useEventSession'
 import { usePhotoUpload } from '@/hooks/usePhotoUpload'
 import { usePhotos } from '@/hooks/usePhotos'
@@ -53,9 +56,36 @@ function App() {
 
   const navigate = useNavigate()
   const isEventsRoute = useMatch(ROUTES.events) !== null
+  const configMatch = useMatch(ROUTES.eventConfig)
+  const isOrganizerRoute = isEventsRoute || configMatch !== null
 
   const eventId = session?.id ?? null
   const role = session?.role ?? null
+
+  // Konfiguracja strony wybranego wydarzenia (sekcje, treści, motyw).
+  const { page, error: pageError, reload: reloadPage } = useEventPage(eventId)
+
+  // Po powrocie z panelu organizatora (tam konfigurację można zmienić)
+  // wczytujemy ją ponownie.
+  const wasOrganizerRouteRef = useRef(isOrganizerRoute)
+  useEffect(() => {
+    if (wasOrganizerRouteRef.current && !isOrganizerRoute) {
+      void reloadPage()
+    }
+    wasOrganizerRouteRef.current = isOrganizerRoute
+  }, [isOrganizerRoute, reloadPage])
+
+  // Motyw wydarzenia na całej stronie (także w zarządzaniu). Panel
+  // organizatora i ekrany wejścia - motyw domyślny.
+  const theme = !isOrganizerRoute && session && page?.event.id === session.id ? page.event.theme : null
+  useEffect(() => {
+    const root = document.documentElement
+    if (theme) {
+      root.dataset.theme = theme
+    } else {
+      delete root.dataset.theme
+    }
+  }, [theme])
 
   const {
     photos,
@@ -131,23 +161,48 @@ function App() {
     [enterEvent, navigate]
   )
 
+  const handleOpenEventPage = useCallback(
+    (event: EventPreview) => {
+      enterEvent(event)
+      navigate(ROUTES.home)
+    },
+    [enterEvent, navigate]
+  )
+
+  const organizerAccess: OrganizerAccess = {
+    initializing,
+    submitting,
+    hasGoogleAccount,
+    isSuperAdmin,
+    accountLabel,
+    error: sessionError,
+    onLogin: loginAsOrganizer,
+    onSwitchAccount: switchOrganizerAccount,
+    onLogout: logout,
+  }
+
   // Panel organizatora działa bez wybranego wydarzenia i bez pseudonimu -
   // obsługujemy go przed ekranami kodu i pseudonimu.
   if (isEventsRoute) {
     return (
       <EventsManagementScreen
-        initializing={initializing}
-        submitting={submitting}
-        hasGoogleAccount={hasGoogleAccount}
-        isSuperAdmin={isSuperAdmin}
-        accountLabel={accountLabel}
+        access={organizerAccess}
         currentEventId={eventId}
-        error={sessionError}
-        onLogin={loginAsOrganizer}
-        onSwitchAccount={switchOrganizerAccount}
         onEnter={handleEnterEvent}
         onEventChanged={syncEventChange}
-        onLogout={logout}
+      />
+    )
+  }
+
+  if (configMatch?.params.eventId) {
+    return (
+      <EventConfigScreen
+        key={configMatch.params.eventId}
+        eventId={configMatch.params.eventId}
+        access={organizerAccess}
+        currentEventId={eventId}
+        onOpenPage={handleOpenEventPage}
+        onEventChanged={syncEventChange}
       />
     )
   }
@@ -169,6 +224,9 @@ function App() {
             <EventGalleryScreen
               eventName={session.name}
               nickname={nickname}
+              page={page?.event.id === session.id ? page : null}
+              pageError={pageError}
+              onRetryPage={reloadPage}
               photos={photos}
               loadingPhotos={loadingPhotos}
               uploading={uploading}

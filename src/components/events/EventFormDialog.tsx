@@ -14,14 +14,13 @@ import {
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
 import { Input } from '@/components/ui/input'
 import { isAccessCodeTaken } from '@/lib/eventsAdminApi'
-import { EVENT_LIMITS, type AdminEvent, type AdminEventInput } from '@/types/adminEvent'
+import { EVENT_LIMITS, type AdminEventInput } from '@/types/adminEvent'
 import { AccessCodeField } from './AccessCodeField'
 import {
   describeSaveError,
   fromDateTimeLocal,
   generateAccessCode,
   normalizeAccessCode,
-  toDateTimeLocal,
   validateAccessCode,
 } from './eventFormat'
 
@@ -32,18 +31,17 @@ type EventFormValues = {
 }
 
 type EventFormDialogProps = {
-  // null = nowe wydarzenie (z kodem dostępu), inaczej edycja nazwy i daty
-  event: AdminEvent | null
   onClose: () => void
-  onCreate: (input: AdminEventInput, accessCode: string) => Promise<unknown>
-  onUpdate: (eventId: string, input: AdminEventInput) => Promise<void>
+  // Zwraca id nowego wydarzenia.
+  onCreate: (input: AdminEventInput, accessCode: string) => Promise<string>
+  onCreated: (eventId: string) => void
 }
 
-// Montowany tylko na czas edycji - wartości początkowe biorą się z wydarzenia.
-export function EventFormDialog({ event, onClose, onCreate, onUpdate }: EventFormDialogProps) {
+// Nowe wydarzenie: nazwa, data i kod dostępu. Resztę ustawia się na stronie
+// konfiguracji wydarzenia, na którą panel przechodzi po utworzeniu.
+export function EventFormDialog({ onClose, onCreate, onCreated }: EventFormDialogProps) {
   const id = useId()
   const busyRef = useRef(false)
-  const isNew = event === null
   const {
     register,
     handleSubmit,
@@ -52,9 +50,9 @@ export function EventFormDialog({ event, onClose, onCreate, onUpdate }: EventFor
     formState: { errors, isSubmitting },
   } = useForm<EventFormValues>({
     defaultValues: {
-      name: event?.name ?? '',
-      startsAt: toDateTimeLocal(event?.starts_at ?? null),
-      accessCode: isNew ? generateAccessCode() : '',
+      name: '',
+      startsAt: '',
+      accessCode: generateAccessCode(),
     },
     mode: 'onTouched',
   })
@@ -69,14 +67,10 @@ export function EventFormDialog({ event, onClose, onCreate, onUpdate }: EventFor
     }
 
     try {
-      if (isNew) {
-        await onCreate(input, normalizeAccessCode(values.accessCode))
-      } else {
-        await onUpdate(event.id, input)
-      }
-      onClose()
+      const eventId = await onCreate(input, normalizeAccessCode(values.accessCode))
+      onCreated(eventId)
     } catch (err) {
-      if (isNew && isAccessCodeTaken(err)) {
+      if (isAccessCodeTaken(err)) {
         setError('accessCode', { message: 'Ten kod jest już używany przez inne wydarzenie.' })
       } else {
         console.error(err)
@@ -97,11 +91,9 @@ export function EventFormDialog({ event, onClose, onCreate, onUpdate }: EventFor
     <Dialog open onOpenChange={(open) => !open && !isSubmitting && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isNew ? 'Nowe wydarzenie' : 'Edycja wydarzenia'}</DialogTitle>
+          <DialogTitle>Nowe wydarzenie</DialogTitle>
           <DialogDescription>
-            {isNew
-              ? 'Goście wchodzą do wydarzenia kodem dostępu. Organizatorów wskażesz potem w „Członkowie”.'
-              : 'Zmiana nazwy i daty jest od razu widoczna dla wszystkich uczestników.'}
+            Goście wchodzą do wydarzenia kodem dostępu. Po utworzeniu przejdziesz do konfiguracji strony.
           </DialogDescription>
         </DialogHeader>
 
@@ -132,17 +124,13 @@ export function EventFormDialog({ event, onClose, onCreate, onUpdate }: EventFor
             />
           </FormField>
 
-          {isNew && (
-            <AccessCodeField
-              id={codeId}
-              label="Kod dostępu *"
-              error={errors.accessCode?.message}
-              registration={register('accessCode', { validate: validateAccessCode })}
-              onGenerate={() =>
-                setValue('accessCode', generateAccessCode(), { shouldValidate: true, shouldDirty: true })
-              }
-            />
-          )}
+          <AccessCodeField
+            id={codeId}
+            label="Kod dostępu *"
+            error={errors.accessCode?.message}
+            registration={register('accessCode', { validate: validateAccessCode })}
+            onGenerate={() => setValue('accessCode', generateAccessCode(), { shouldValidate: true, shouldDirty: true })}
+          />
 
           {errors.root?.message && (
             <div role="alert">
@@ -155,7 +143,7 @@ export function EventFormDialog({ event, onClose, onCreate, onUpdate }: EventFor
               Anuluj
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isNew ? 'Utwórz wydarzenie' : 'Zapisz'}
+              Utwórz wydarzenie
             </Button>
           </DialogFooter>
         </form>

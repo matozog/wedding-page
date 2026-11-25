@@ -11,7 +11,6 @@ import {
 } from '@/components/ui/dialog'
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
 import { isAccessCodeTaken } from '@/lib/eventsAdminApi'
-import type { AdminEvent } from '@/types/adminEvent'
 import { AccessCodeField } from './AccessCodeField'
 import { describeSaveError, generateAccessCode, normalizeAccessCode, validateAccessCode } from './eventFormat'
 
@@ -20,7 +19,7 @@ type AccessCodeFormValues = {
 }
 
 type AccessCodeDialogProps = {
-  event: AdminEvent
+  event: { id: string; name: string }
   onClose: () => void
   onSave: (eventId: string, accessCode: string) => Promise<void>
 }

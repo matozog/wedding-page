@@ -1,4 +1,4 @@
-import { KeyRound, LogIn, Pencil, Trash2, Users } from 'lucide-react'
+import { KeyRound, LogIn, Settings2, Trash2, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
@@ -43,11 +43,11 @@ function SecondaryActions({ event, onEdit, onMembers, onAccessCode, onDelete }: 
         variant="ghost"
         size="icon"
         className="size-8"
-        aria-label={`Edytuj: ${event.name}`}
-        title="Edytuj"
+        aria-label={`Konfiguracja: ${event.name}`}
+        title="Konfiguracja strony"
         onClick={() => onEdit(event)}
       >
-        <Pencil className="size-4" />
+        <Settings2 className="size-4" />
       </Button>
       <Button
         type="button"

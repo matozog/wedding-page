@@ -1,3 +1,5 @@
+import type { EventSectionKey } from '@/types/eventPage'
+
 // Identyfikatory sekcji strony wydarzenia. Komponenty sekcji używają ich
 // jako atrybutu id, a menu jako celu przewijania.
 export const SECTION_IDS = {
@@ -11,12 +13,13 @@ export const SECTION_IDS = {
 
 export type SectionId = (typeof SECTION_IDS)[keyof typeof SECTION_IDS]
 
-// Kolejność odpowiada kolejności sekcji na stronie.
-export const SECTION_NAV_ITEMS: readonly { id: SectionId; label: string }[] = [
-  { id: SECTION_IDS.gallery, label: 'Galeria' },
-  { id: SECTION_IDS.couple, label: 'Para młoda' },
-  { id: SECTION_IDS.schedule, label: 'Plan dnia' },
-  { id: SECTION_IDS.seating, label: 'Plan sali' },
-  { id: SECTION_IDS.location, label: 'Dojazd' },
-  { id: SECTION_IDS.contact, label: 'Kontakt' },
+// Kolejność odpowiada kolejności sekcji na stronie. key - sekcja w
+// konfiguracji wydarzenia (ukryte sekcje znikają też z menu).
+export const SECTION_NAV_ITEMS: readonly { key: EventSectionKey; id: SectionId; label: string }[] = [
+  { key: 'gallery', id: SECTION_IDS.gallery, label: 'Galeria' },
+  { key: 'couple', id: SECTION_IDS.couple, label: 'Para młoda' },
+  { key: 'schedule', id: SECTION_IDS.schedule, label: 'Plan dnia' },
+  { key: 'seating', id: SECTION_IDS.seating, label: 'Plan sali' },
+  { key: 'location', id: SECTION_IDS.location, label: 'Dojazd' },
+  { key: 'contact', id: SECTION_IDS.contact, label: 'Kontakt' },
 ]

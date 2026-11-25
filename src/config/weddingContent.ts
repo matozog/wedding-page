@@ -1,3 +1,5 @@
+// Treści jeszcze niekonfigurowalne w panelu (sekcja Para młoda, plan sali,
+// stopka). Plan wydarzenia, dojazd i kontakt są w bazie (event_* tables).
 export const weddingContent = {
   defaultTitle: 'Nasze wesele',
   couple: {
@@ -6,31 +8,6 @@ export const weddingContent = {
     venue: 'Politechnika Lubelska',
     story:
       'Tutaj może jaka historia jak się poznaliście',
-  },
-  locations: {
-    ceremony: {
-      name: 'Parafia Matki Bożej Różańcowej',
-      address: 'ul. Bursztynowa 20, 20-576 Lublin',
-    },
-    reception: {
-      name: 'Dworek Jabłonna',
-      address: 'Jabłonna-Majątek 44 a, 23-114 Jabłonna-Majątek',
-    },
-  },
-  // Plan dnia - zamockowane godziny/pozycje, podmieńcie na docelowy przebieg.
-  schedule: {
-    note: 'Orientacyjny przebieg dnia - godziny mogą jeszcze się nieznacznie zmienić.',
-    items: [
-      { time: '15:00', title: 'Ceremonia ślubna', description: 'Kościół Podwyższenia Krzyża Świętego' },
-      { time: '16:00', title: 'Przyjazd do sali', description: 'Powitanie chlebem i solą' },
-      { time: '16:30', title: 'Toast powitalny', description: 'Lampka szampana i pierwsze gratulacje' },
-      { time: '17:30', title: 'Obiad - I danie', description: '' },
-      { time: '19:00', title: 'Przekąski', description: 'Zimna płyta' },
-      { time: '20:00', title: 'Pierwszy taniec', description: 'Para Młoda otwiera parkiet' },
-      { time: '20:30', title: 'Obiad - II danie', description: '' },
-      { time: '21:30', title: 'Tort weselny', description: '' },
-      { time: '22:30', title: 'Przekąski nocne', description: '' },
-    ],
   },
   // Rzut sali: pozycje (x, y) oraz rozmiary (w, h) podane w procentach
   // względem kontenera planu (0-100), więc skalują się na każdym ekranie.
@@ -84,13 +61,7 @@ export const weddingContent = {
       { id: 't7', label: 'Stół 5', shape: 'rect' as const, x: 84, y: 20, w: 10, h: 42, guests: [] },
     ],
   },
-  contact: {
-    email: 'mateusz.ozog.dev@gmail.com',
-    phone: '+48 512 805 513',
-    note: 'W razie pytań dotyczących dojazdu, noclegu lub programu dnia — śmiało piszcie lub dzwońcie.',
-  },
   footer: {
     message: 'Dziękujemy, że jesteście z nami w tym wyjątkowym dniu.',
-    year: 2026,
   },
 } as const
