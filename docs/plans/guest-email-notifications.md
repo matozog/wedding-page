@@ -7,11 +7,13 @@ użytkownikowi plan danego etapu do akceptacji (CLAUDE.md, zasada 1).
 
 - Migracja `supabase/migrations/20261125143000_guest_email.sql`: ograniczenie `guests_email_format`
   (format jak `event_contacts.email`, adres zapisany małymi literami, limit 254 z wcześniejszej migracji).
-- Test `supabase/tests/09_guest_email.test.sql`: format, ADMIN zapisuje, EDITOR czyta, gość/obcy nie widzą.
+- Test `supabase/tests/10_guest_email.test.sql`: format, ADMIN zapisuje, EDITOR czyta, gość/obcy nie widzą.
 - Front: pole „E-mail” w `GuestEditSheet` i w drugim wierszu `GuestEditRow`. W tabeli tylko ikona ✉
   przy telefonie, adres w podpowiedzi. Na kartach (wąski ekran) adres pokazany, gdy jest.
   E-mail w wyszukiwarce i filtr „Z e-mailem / Bez e-maila”, widoczny dopiero, gdy ktoś ma adres.
-- E-mail zostaje w `guests`, tak jak telefon: EDITOR go widzi. Ukrycie przed EDITOR-em wymagałoby
+- E-mail zostaje w `guests`, tak jak telefon: EDITOR go widzi i (od `20261125130000_seating_layout`)
+  może edytować, bo EDITOR dodaje i edytuje gości. Dla gości bez roli `get_seating_plan()` zwraca
+  tylko imiona. Ukrycie przed EDITOR-em wymagałoby
   osobnej tabeli `guest_contacts` z RLS tylko dla ADMIN-a. Wróć do tego, jeśli użytkownik tego zechce.
 
 ## Punkty wyjścia w kodzie
