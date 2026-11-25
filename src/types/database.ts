@@ -588,6 +588,7 @@ export type Database = {
         Args: { p_access_code: string; p_name: string; p_starts_at?: string };
         Returns: string;
       };
+      delete_event: { Args: { p_event_id: string }; Returns: undefined };
       delete_guest_group: {
         Args: { p_delete_guests?: boolean; p_group_id: string };
         Returns: number;
@@ -622,6 +623,29 @@ export type Database = {
           starts_at: string;
         }[];
       };
+      list_event_members_admin: {
+        Args: { p_event_id: string };
+        Returns: {
+          display_name: string;
+          email: string;
+          is_anonymous: boolean;
+          joined_at: string;
+          role: Database["public"]["Enums"]["event_role"];
+          user_id: string;
+        }[];
+      };
+      list_events_admin: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          created_at: string;
+          guest_count: number;
+          id: string;
+          member_count: number;
+          name: string;
+          photo_count: number;
+          starts_at: string;
+        }[];
+      };
       my_event_role: {
         Args: { p_event_id: string };
         Returns: Database["public"]["Enums"]["event_role"];
@@ -629,7 +653,17 @@ export type Database = {
       normalize_access_code: { Args: { p_code: string }; Returns: string };
       remove_member: { Args: { p_event_id: string; p_user_id: string }; Returns: undefined };
       require_display_name: { Args: { p_display_name: string }; Returns: string };
+      require_event_name: { Args: { p_name: string }; Returns: string };
+      require_free_access_code: {
+        Args: { p_access_code: string; p_except_event_id: string };
+        Returns: string;
+      };
+      require_platform_admin: { Args: Record<PropertyKey, never>; Returns: undefined };
       set_display_name: { Args: { p_display_name: string }; Returns: undefined };
+      set_event_access_code: {
+        Args: { p_access_code: string; p_event_id: string };
+        Returns: undefined;
+      };
       set_member_role: {
         Args: {
           p_event_id: string;
@@ -641,6 +675,10 @@ export type Database = {
       shares_event_with: { Args: { p_user_id: string }; Returns: boolean };
       storage_path_event_id: { Args: { p_name: string }; Returns: string };
       storage_path_owner: { Args: { p_name: string }; Returns: string };
+      update_event: {
+        Args: { p_event_id: string; p_name: string; p_starts_at: string };
+        Returns: undefined;
+      };
       update_guest_group: {
         Args: {
           p_address?: string;

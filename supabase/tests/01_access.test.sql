@@ -59,7 +59,11 @@ select ok(not has_function_privilege('authenticated', 'public.normalize_access_c
 -- events ------------------------------------------------------------------------
 select pg_temp.act_as(:A);
 select public.create_event('Wesele E&M', 'abc123', '2027-06-12 16:00+02') as event_id \gset
-select ok((select role = 'ADMIN' from public.event_members where event_id = :'event_id' and user_id = :A), 'creator becomes event ADMIN');
+select ok((select count(*) = 0 from public.event_members where event_id = :'event_id'), 'creator does not become a member');
+-- The platform admin also takes part in this event: joins and becomes its ADMIN.
+select count(*) from public.join_event('abc123') \g /dev/null
+select public.set_member_role(:'event_id', :A, 'ADMIN');
+select ok((select role = 'ADMIN' from public.event_members where event_id = :'event_id' and user_id = :A), 'platform admin can make self the event ADMIN');
 select pg_temp.expect_error($$select public.create_event('Duplikat', ' ABC123 ')$$, 'duplicate access code rejected (case/space-insensitive)');
 select pg_temp.expect_error($$select public.create_event('Krótki', 'abc')$$, 'too short access code rejected');
 

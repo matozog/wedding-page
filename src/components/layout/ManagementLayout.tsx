@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 export type BreadcrumbItem = { label: string; to?: string }
 
 type ManagementLayoutProps = {
+  // Nazwa wydarzenia albo tytuł strony spoza wydarzenia (panel organizatora).
   eventName: string
   nickname: string
   // ADMIN i EDITOR (podgląd). Ukrycie ekranu to tylko UI - operacje panelu
@@ -20,6 +21,8 @@ type ManagementLayoutProps = {
   // Na desktopie strona zajmuje dokładnie wysokość okna, a przewija się
   // zawartość (np. tabela gości).
   fillViewport?: boolean
+  // Przycisk powrotu do strony wydarzenia - ukryty, gdy nie wybrano wydarzenia.
+  showEventLink?: boolean
   onLogout: () => void
   children: ReactNode
 }
@@ -33,6 +36,7 @@ export function ManagementLayout({
   error,
   breadcrumbs,
   fillViewport = false,
+  showEventLink = true,
   onLogout,
   children,
 }: ManagementLayoutProps) {
@@ -83,12 +87,14 @@ export function ManagementLayout({
             <LogOut className="size-4" />
             <span className="hidden sm:inline">Wyloguj</span>
           </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link to={ROUTES.home} aria-label="Wróć do strony wydarzenia" title="Wróć do strony wydarzenia">
-              <ArrowLeft className="size-4" />
-              <span className="hidden sm:inline">Strona wydarzenia</span>
-            </Link>
-          </Button>
+          {showEventLink && (
+            <Button asChild variant="outline" size="sm">
+              <Link to={ROUTES.home} aria-label="Wróć do strony wydarzenia" title="Wróć do strony wydarzenia">
+                <ArrowLeft className="size-4" />
+                <span className="hidden sm:inline">Strona wydarzenia</span>
+              </Link>
+            </Button>
+          )}
         </div>
       </header>
 

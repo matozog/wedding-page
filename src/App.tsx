@@ -1,9 +1,10 @@
-import { useCallback, useEffect } from 'react'
-import { Navigate, Route, Routes } from 'react-router'
-import { Settings } from 'lucide-react'
+import { useCallback, useEffect, useMemo } from 'react'
+import { Navigate, Route, Routes, useMatch, useNavigate } from 'react-router'
+import { CalendarCog, Settings } from 'lucide-react'
 import type { SectionNavLink } from '@/components/layout/SectionNav'
 import { CodeEntryScreen } from '@/components/screens/CodeEntryScreen'
 import { EventGalleryScreen } from '@/components/screens/EventGalleryScreen'
+import { EventsManagementScreen } from '@/components/screens/EventsManagementScreen'
 import { ExpensesManagementScreen } from '@/components/screens/ExpensesManagementScreen'
 import { GuestsManagementScreen } from '@/components/screens/GuestsManagementScreen'
 import { ManagementScreen } from '@/components/screens/ManagementScreen'
@@ -15,11 +16,12 @@ import { usePhotos } from '@/hooks/usePhotos'
 import { deletePhoto } from '@/lib/photosApi'
 import { ROUTES } from '@/lib/routes'
 import { canManageAllPhotos, canManageEvent, canViewManagement } from '@/types/role'
+import type { EventPreview } from '@/types/event'
 import type { Photo } from '@/types/photo'
 
-const MANAGEMENT_NAV_LINKS: readonly SectionNavLink[] = [
-  { to: ROUTES.management, label: 'Zarządzanie', icon: Settings },
-]
+const MANAGEMENT_NAV_LINK: SectionNavLink = { to: ROUTES.management, label: 'Zarządzanie', icon: Settings }
+// Tylko super admin - panel wszystkich wydarzeń.
+const EVENTS_NAV_LINK: SectionNavLink = { to: ROUTES.events, label: 'Wydarzenia', icon: CalendarCog }
 
 function App() {
   const {
@@ -33,14 +35,24 @@ function App() {
     submitting,
     userId,
     hasNickname,
+    isSuperAdmin,
+    hasGoogleAccount,
+    accountLabel,
     error: sessionError,
     setError: setSessionError,
     checkCode,
     saveNickname,
     loginWithGoogle,
+    loginAsOrganizer,
+    switchOrganizerAccount,
+    enterEvent,
+    syncEventChange,
     cancelPendingEvent,
     logout,
   } = useEventSession()
+
+  const navigate = useNavigate()
+  const isEventsRoute = useMatch(ROUTES.events) !== null
 
   const eventId = session?.id ?? null
   const role = session?.role ?? null
@@ -103,7 +115,42 @@ function App() {
   const error = sessionError ?? photosError
   const canManage = canManageEvent(role)
   const canOpenManagement = canViewManagement(role)
-  const navLinks = canOpenManagement ? MANAGEMENT_NAV_LINKS : undefined
+  const navLinks = useMemo(() => {
+    const links = [
+      ...(canOpenManagement ? [MANAGEMENT_NAV_LINK] : []),
+      ...(isSuperAdmin ? [EVENTS_NAV_LINK] : []),
+    ]
+    return links.length > 0 ? links : undefined
+  }, [canOpenManagement, isSuperAdmin])
+
+  const handleEnterEvent = useCallback(
+    (event: EventPreview) => {
+      enterEvent(event)
+      navigate(ROUTES.management)
+    },
+    [enterEvent, navigate]
+  )
+
+  // Panel organizatora działa bez wybranego wydarzenia i bez pseudonimu -
+  // obsługujemy go przed ekranami kodu i pseudonimu.
+  if (isEventsRoute) {
+    return (
+      <EventsManagementScreen
+        initializing={initializing}
+        submitting={submitting}
+        hasGoogleAccount={hasGoogleAccount}
+        isSuperAdmin={isSuperAdmin}
+        accountLabel={accountLabel}
+        currentEventId={eventId}
+        error={sessionError}
+        onLogin={loginAsOrganizer}
+        onSwitchAccount={switchOrganizerAccount}
+        onEnter={handleEnterEvent}
+        onEventChanged={syncEventChange}
+        onLogout={logout}
+      />
+    )
+  }
 
   // Zapisane wydarzenie czeka na profil z bazy, a kod sprzed logowania Google
   // na dołączenie - bez tego mignąłby ekran pseudonimu.
