@@ -33,6 +33,15 @@ update public.seating_tables set capacity = 8 where capacity is null;
 -- the new limit - older rows had no upper bound
 update public.seating_tables set capacity = 60 where capacity > 60;
 
+-- Capacity used to be soft: unseat guests on seats above it (the triggers
+-- below only check new writes). guests_clear_seat_without_table clears the
+-- seat number.
+update public.guests g
+set table_id = null
+from public.seating_tables t
+where t.id = g.table_id
+  and g.seat_number > t.capacity;
+
 alter table public.seating_tables
   alter column capacity set not null,
   alter column capacity set default 8,

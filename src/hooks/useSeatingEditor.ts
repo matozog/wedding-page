@@ -65,7 +65,9 @@ export function useSeatingEditor(eventId: string) {
   const [error, setError] = useState<string | null>(null)
   const loadIdRef = useRef(0)
 
-  const load = useCallback(async () => {
+  // failMessage - inny komunikat np. po udanym zapisie układu, żeby nie
+  // sugerować, że zmiany przepadły.
+  const load = useCallback(async (failMessage = 'Nie udało się wczytać planu sali.') => {
     const loadId = ++loadIdRef.current
     setLoading(true)
     setError(null)
@@ -88,7 +90,7 @@ export function useSeatingEditor(eventId: string) {
     } catch (err) {
       if (loadId !== loadIdRef.current) return
       console.error('Seating plan error:', err)
-      setError('Nie udało się wczytać planu sali.')
+      setError(failMessage)
     } finally {
       if (loadId === loadIdRef.current) setLoading(false)
     }
@@ -223,7 +225,7 @@ export function useSeatingEditor(eventId: string) {
           const id = result.table_ids[index]
           if (id) idMap.set(table.id, id)
         })
-        await load()
+        await load('Układ został zapisany, ale nie udało się odświeżyć planu sali.')
       }
 
       return { ...result, idMap }

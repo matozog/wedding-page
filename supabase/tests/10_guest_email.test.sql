@@ -1,5 +1,6 @@
 -- =============================================================================
--- Guest e-mail - format rule, EDITOR reads, guests / outsiders see nothing.
+-- Guest e-mail - format rule, EDITOR reads (writes like any guest column,
+-- see 04_guest_management), guests / outsiders see nothing.
 -- Run: npx supabase test db   (local stack, everything rolled back)
 --
 -- Actors: B = event ADMIN, E = EDITOR, G = guest, O = outsider.

@@ -5,7 +5,9 @@
 --     not edit it until now.
 --   * Same format rule as event_contacts.email, stored trimmed and lower-case
 --     (sending later deduplicates addresses within a household).
---   * Access unchanged: ADMIN writes, EDITOR reads (like guests.phone).
+--   * Access as for the other guest columns: ADMIN and EDITOR read and write
+--     (EDITOR may edit guests since 20261125130000_seating_layout.sql),
+--     guests and outsiders see nothing.
 -- =============================================================================
 
 update public.guests
