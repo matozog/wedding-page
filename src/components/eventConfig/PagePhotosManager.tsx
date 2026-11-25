@@ -18,6 +18,9 @@ type PagePhotosManagerProps = {
 
 const isAllowedType = (type: string) => (ALLOWED_PHOTO_MIME_TYPES as readonly string[]).includes(type)
 
+// Opis tak, jak zapisze go baza: puste pole i brak opisu to to samo.
+const altValue = (value: string | null | undefined) => value?.trim() ?? ''
+
 // Zdjęcia karuzeli "O nas". Dodawanie i usuwanie zapisują się od razu,
 // kolejność i opisy - przyciskiem "Zapisz kolejność i opisy".
 export function PagePhotosManager({ eventId, photos, onChange }: PagePhotosManagerProps) {
@@ -35,7 +38,10 @@ export function PagePhotosManager({ eventId, photos, onChange }: PagePhotosManag
   const freeSlots = EVENT_PAGE_LIMITS.photos - draft.length
   const orderChanged =
     draft.length !== photos.length ||
-    draft.some((photo, index) => photo.id !== photos[index]?.id || photo.alt_text !== photos[index]?.alt_text)
+    draft.some(
+      (photo, index) =>
+        photo.id !== photos[index]?.id || altValue(photo.alt_text) !== altValue(photos[index]?.alt_text)
+    )
 
   // Rodzic dostaje tylko zapisany stan - niezapisane opisy i kolejność
   // zostają w szkicu.

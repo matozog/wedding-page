@@ -573,8 +573,16 @@ begin
   perform public.require_platform_admin();
   perform public.require_item_list(p_items, 10, 'zdjęcia');
 
+  -- Każde zdjęcie sekcji dokładnie raz: tyle samo pozycji co zdjęć i tyle
+  -- samo różnych zdjęć sekcji wskazanych na liście (powtórzone lub obce id
+  -- nie przejdą). Porównanie po tekście - błędne id to brak dopasowania.
   if (select count(*) from public.event_page_photos p
       where p.event_id = p_event_id and p.section = p_section)
+     <> jsonb_array_length(p_items)
+     or (select count(distinct p.id)
+         from public.event_page_photos p
+         join jsonb_array_elements(p_items) as x (item) on p.id::text = x.item ->> 'id'
+         where p.event_id = p_event_id and p.section = p_section)
      <> jsonb_array_length(p_items) then
     raise exception 'Lista zdjęć jest nieaktualna - odśwież stronę.' using errcode = 'PT409';
   end if;
@@ -586,10 +594,6 @@ begin
   where p.id = (x.item ->> 'id')::uuid
     and p.event_id = p_event_id
     and p.section = p_section;
-
-  if not found and jsonb_array_length(p_items) > 0 then
-    raise exception 'Lista zdjęć jest nieaktualna - odśwież stronę.' using errcode = 'PT409';
-  end if;
 end;
 $$;
 

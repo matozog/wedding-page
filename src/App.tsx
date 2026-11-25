@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { Navigate, Route, Routes, useMatch, useNavigate } from 'react-router'
 import { CalendarCog, Settings } from 'lucide-react'
 import type { SectionNavLink } from '@/components/layout/SectionNav'
@@ -89,7 +89,8 @@ function App() {
     if (sessionId && pageTheme) writeCachedTheme(sessionId, pageTheme)
   }, [sessionId, pageTheme])
 
-  useEffect(() => {
+  // useLayoutEffect - motyw jest ustawiony przed narysowaniem strony.
+  useLayoutEffect(() => {
     const root = document.documentElement
     if (theme) {
       root.dataset.theme = theme

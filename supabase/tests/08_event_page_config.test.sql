@@ -139,6 +139,12 @@ select ok((select position = 0 from public.event_page_photos where id = :'photo_
           and (select position = 1 and alt_text = 'Nowy opis' from public.event_page_photos where id = :'photo_a'), 'order and alt text saved');
 select throws_ok(format($$select public.save_event_page_photos(%L, 'couple', %L::jsonb)$$, :'ev',
   json_build_array(json_build_object('id', :'photo_a'))), 'PT409', null, 'stale photo list rejected');
+select throws_ok(format($$select public.save_event_page_photos(%L, 'couple', %L::jsonb)$$, :'ev',
+  json_build_array(json_build_object('id', :'photo_a'), json_build_object('id', :'photo_a'))), 'PT409', null, 'repeated photo id rejected');
+select throws_ok(format($$select public.save_event_page_photos(%L, 'couple', %L::jsonb)$$, :'ev',
+  json_build_array(json_build_object('id', :'photo_a'), json_build_object('id', 'not-a-uuid'))), 'PT409', null, 'unknown photo id rejected');
+select ok((select position = 0 from public.event_page_photos where id = :'photo_b')
+          and (select position = 1 from public.event_page_photos where id = :'photo_a'), 'rejected lists leave the order unchanged');
 
 select ok((select public.delete_event_page_photo(:'photo_b') = :'ev' || '/page/b.jpg'), 'delete returns the file path');
 select throws_ok(format($$select public.delete_event_page_photo(%L)$$, :'photo_b'), 'PT404', null, 'deleting twice reports missing photo');
