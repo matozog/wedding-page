@@ -1,6 +1,6 @@
 -- =============================================================================
--- "Whose guest" = an inviter from the guest list (replaces HOST_A / HOST_B
--- sides with per-event labels - those never reached a shared database).
+-- "Whose guest" = an inviter from the guest list (replaces the wedding-only
+-- guests.side BRIDE / GROOM / BOTH).
 --
 --   * guests.is_inviter            - person others can be "from" (the couple at
 --                                    a wedding, the host and a friend bringing
@@ -18,15 +18,15 @@
 
 -- -----------------------------------------------------------------------------
 -- drop the side model
+-- BOTH -> invited_jointly. BRIDE / GROOM have no inviter to map to yet (the
+-- inviters are flagged in the panel after this migration), so they are
+-- dropped - set "od kogo" again in the panel.
 -- -----------------------------------------------------------------------------
-alter table public.guests       add column invited_jointly boolean not null default false;
+alter table public.guests add column invited_jointly boolean not null default false;
 update public.guests set invited_jointly = true where side = 'BOTH';
 
-alter table public.guests       drop column side;
-alter table public.guest_groups drop column side;
+alter table public.guests drop column side;
 drop type public.guest_side;
-
-alter table public.events drop column host_a_label, drop column host_b_label;
 
 -- -----------------------------------------------------------------------------
 -- inviters

@@ -5,7 +5,6 @@
 --     organisers' estimate, CONFIRMED / DECLINED mean the guest answered.
 --   * Address on the household (guest_groups) with an optional per-guest
 --     override (a guest without a group, an adult child living elsewhere).
---   * guest_groups.side - default "whose guest" for new group members (UI).
 --   * Length limits on the free-text fields the panel edits.
 --   * Access: only the event ADMIN changes the guest list, EDITOR reads it.
 --     (When a seating UI for editors arrives, it needs its own way to write
@@ -39,12 +38,11 @@ alter table public.guests drop column rsvp_status;
 drop type public.rsvp_status;
 
 -- -----------------------------------------------------------------------------
--- address, group side, text limits
+-- address, text limits
 -- -----------------------------------------------------------------------------
 alter table public.guest_groups
   add column address text
-    constraint guest_groups_address_length check (address is null or char_length(address) <= 300),
-  add column side public.guest_side;
+    constraint guest_groups_address_length check (address is null or char_length(address) <= 300);
 
 alter table public.guest_groups
   add constraint guest_groups_notes_length check (notes is null or char_length(notes) <= 2000);

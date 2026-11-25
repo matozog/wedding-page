@@ -29,10 +29,14 @@ alter table public.expenses
 alter table public.expenses
   add column deposit_amount numeric(12,2);
 
--- Former BOOKED rows: deposit = recorded payments when they form a valid
--- deposit, otherwise the expense goes back to UNPAID.
+-- Former BOOKED rows, by the sum of their recorded payments:
+--   * covers the total (total > 0)  -> PAID
+--   * less than the total           -> DEPOSIT_PAID, deposit = that sum
+--   * no payments / total unknown   -> UNPAID
+-- (total_amount was null -> 0 above, so such rows end up UNPAID.)
 update public.expenses e
-set deposit_amount = p.paid
+set status         = case when p.paid >= e.total_amount then 'PAID' else 'DEPOSIT_PAID' end::public.expense_status,
+    deposit_amount = case when p.paid >= e.total_amount then null else p.paid end
 from (
   select expense_id, sum(amount) as paid
   from public.expense_payments
@@ -40,8 +44,7 @@ from (
 ) p
 where p.expense_id = e.id
   and e.status = 'DEPOSIT_PAID'
-  and p.paid > 0
-  and p.paid < e.total_amount;
+  and e.total_amount > 0;
 
 update public.expenses
 set status = 'UNPAID'

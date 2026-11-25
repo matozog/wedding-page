@@ -34,7 +34,6 @@ select public.set_member_role(:'ev', :E, 'EDITOR');
 
 -- schema --------------------------------------------------------------------------
 select hasnt_column('public', 'guests', 'side', 'side column removed');
-select hasnt_column('public', 'events', 'host_a_label', 'host labels removed');
 select hasnt_type('public', 'guest_side', 'guest_side type removed');
 
 -- setup -----------------------------------------------------------------------------
