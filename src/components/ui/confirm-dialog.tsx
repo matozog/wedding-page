@@ -16,6 +16,8 @@ type ConfirmDialogProps = {
   description: ReactNode
   confirmLabel: string
   destructive?: boolean
+  // Np. dopóki użytkownik nie przepisze nazwy usuwanego elementu.
+  confirmDisabled?: boolean
   errorMessage?: string
   children?: ReactNode
   onOpenChange: (open: boolean) => void
@@ -29,6 +31,7 @@ export function ConfirmDialog({
   description,
   confirmLabel,
   destructive = false,
+  confirmDisabled = false,
   errorMessage = 'Operacja nie powiodła się. Spróbuj ponownie.',
   children,
   onOpenChange,
@@ -79,7 +82,7 @@ export function ConfirmDialog({
           <Button
             type="button"
             variant={destructive ? 'destructive' : 'default'}
-            disabled={pending}
+            disabled={pending || confirmDisabled}
             onClick={handleConfirm}
           >
             {confirmLabel}

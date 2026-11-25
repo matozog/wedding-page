@@ -15,7 +15,9 @@ export const getErrorMessage = (err: unknown): string | null =>
     ? err.message
     : null
 
-const getAuthRedirectUrl = () => window.location.origin + import.meta.env.BASE_URL
+// path - adres w aplikacji (np. ROUTES.events), na który wraca Google.
+const getAuthRedirectUrl = (path = '/') =>
+  window.location.origin + import.meta.env.BASE_URL + path.replace(/^\//, '')
 
 // Sesja jest potrzebna już do sprawdzenia kodu (limit prób liczony na
 // użytkownika). Konto anonimowe nie ma jeszcze profilu - ten powstaje
@@ -127,10 +129,20 @@ export const fetchMyEventRole = async (eventId: string): Promise<EventRole | nul
 
 // Supabase sam odnajduje istniejące konto po tożsamości Google, a gdy go
 // nie ma - zakłada nowe. Jedno przekierowanie do Google.
-export const signInWithGoogle = async () => {
+//
+// returnPath - adres powrotu (musi pasować do listy Redirect URLs w Supabase).
+// selectAccount - Google zawsze pokazuje wybór konta (np. po zalogowaniu na
+// konto bez uprawnień organizatora).
+export const signInWithGoogle = async ({
+  returnPath,
+  selectAccount = false,
+}: { returnPath?: string; selectAccount?: boolean } = {}) => {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: getAuthRedirectUrl() },
+    options: {
+      redirectTo: getAuthRedirectUrl(returnPath),
+      queryParams: selectAccount ? { prompt: 'select_account' } : undefined,
+    },
   })
 
   if (error) {

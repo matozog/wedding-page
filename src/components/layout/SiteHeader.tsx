@@ -1,5 +1,5 @@
 import { Camera, LogOut, Loader2 } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import {
   SectionNavBar,
   SectionNavMenu,
@@ -7,34 +7,39 @@ import {
 } from '@/components/layout/SectionNav'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { SECTION_NAV_ITEMS } from '@/config/navigation'
-import { weddingContent } from '@/config/weddingContent'
+import type { SectionNavItem } from '@/components/layout/SectionNav'
 import { useActiveSection } from '@/hooks/useActiveSection'
 import { PHOTO_INPUT_ACCEPT } from '@/lib/constants'
-
-const SECTION_ID_LIST = SECTION_NAV_ITEMS.map((item) => item.id)
 
 type SiteHeaderProps = {
   eventName: string
   nickname: string
   uploading: boolean
   uploadProgress: number
+  // Widoczne sekcje strony (ukryte w konfiguracji wydarzenia nie trafiają do menu).
+  navItems: readonly SectionNavItem[]
+  // Przycisk dodawania zdjęć - tylko gdy galeria jest widoczna.
+  canUpload: boolean
   navLinks?: readonly SectionNavLink[]
   onUpload: (files: File[]) => void
   onLogout: () => void
 }
 
 export function SiteHeader({
+  eventName,
   nickname,
   uploading,
   uploadProgress,
+  navItems,
+  canUpload,
   navLinks,
   onUpload,
   onLogout,
 }: SiteHeaderProps) {
   const headerRef = useRef<HTMLElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const activeSectionId = useActiveSection(SECTION_ID_LIST)
+  const sectionIds = useMemo(() => navItems.map((item) => item.id), [navItems])
+  const activeSectionId = useActiveSection(sectionIds)
 
   // Wysokość przyklejonego nagłówka trafia do CSS (scroll-margin-top sekcji).
   useEffect(() => {
@@ -64,7 +69,7 @@ export function SiteHeader({
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
         <div className="min-w-0">
           <p className="font-serif text-xs uppercase tracking-[0.3em] text-primary">
-            {weddingContent.couple.names}
+            {eventName}
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
             Witaj, <span className="font-medium text-foreground">{nickname}</span>
@@ -81,53 +86,55 @@ export function SiteHeader({
         </div>
 
         <div className="flex shrink-0 items-start gap-2">
-          <div className="flex flex-col items-end gap-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept={PHOTO_INPUT_ACCEPT}
-              multiple
-              className="hidden"
-              disabled={uploading}
-              onChange={(e) => {
-                const files = Array.from(e.target.files ?? [])
-                if (files.length > 0) {
-                  onUpload(files)
-                }
-                e.target.value = ''
-              }}
-            />
+          {canUpload && (
+            <div className="flex flex-col items-end gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={PHOTO_INPUT_ACCEPT}
+                multiple
+                className="hidden"
+                disabled={uploading}
+                onChange={(e) => {
+                  const files = Array.from(e.target.files ?? [])
+                  if (files.length > 0) {
+                    onUpload(files)
+                  }
+                  e.target.value = ''
+                }}
+              />
 
-            <Button
-              disabled={uploading}
-              onClick={() => fileInputRef.current?.click()}
-              className="shadow-sm sm:h-11 sm:min-w-[180px] sm:px-8"
-            >
-              {uploading ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Camera className="size-4" />
-              )}
-              {uploading ? (
-                'Wysyłanie…'
-              ) : (
-                <>
-                  <span className="sm:hidden">Dodaj</span>
-                  <span className="hidden sm:inline">Dodaj zdjęcia</span>
-                </>
-              )}
-            </Button>
+              <Button
+                disabled={uploading}
+                onClick={() => fileInputRef.current?.click()}
+                className="shadow-sm sm:h-11 sm:min-w-[180px] sm:px-8"
+              >
+                {uploading ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Camera className="size-4" />
+                )}
+                {uploading ? (
+                  'Wysyłanie…'
+                ) : (
+                  <>
+                    <span className="sm:hidden">Dodaj</span>
+                    <span className="hidden sm:inline">Dodaj zdjęcia</span>
+                  </>
+                )}
+              </Button>
 
-            {uploading && (
-              <div className="w-full space-y-1">
-                <Progress value={uploadProgress} aria-label="Postęp wysyłania zdjęć" />
-                <p className="text-center text-xs text-muted-foreground">{uploadProgress}%</p>
-              </div>
-            )}
-          </div>
+              {uploading && (
+                <div className="w-full space-y-1">
+                  <Progress value={uploadProgress} aria-label="Postęp wysyłania zdjęć" />
+                  <p className="text-center text-xs text-muted-foreground">{uploadProgress}%</p>
+                </div>
+              )}
+            </div>
+          )}
 
           <SectionNavMenu
-            items={SECTION_NAV_ITEMS}
+            items={navItems}
             activeId={activeSectionId}
             links={navLinks}
             className="lg:hidden sm:size-11"
@@ -136,7 +143,7 @@ export function SiteHeader({
       </div>
 
       <SectionNavBar
-        items={SECTION_NAV_ITEMS}
+        items={navItems}
         activeId={activeSectionId}
         links={navLinks}
         className="hidden border-t border-border/50 px-4 py-2 lg:block"

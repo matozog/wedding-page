@@ -11,10 +11,15 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { createFullSizePhotoUrl } from '@/lib/photoStorage'
+import { SectionHeading } from '@/components/sections/SectionHeading'
+import type { SectionHeader } from '@/types/eventPage'
 import type { Photo } from '@/types/photo'
 import { SECTION_IDS } from '@/config/navigation'
 
 type PhotoGalleryProps = {
+  header: SectionHeader
+  // Tekst pustej galerii (konfiguracja wydarzenia).
+  emptyText: string | null
   photos: Photo[]
   loading: boolean
   getPhotoUrl: (path: string) => Promise<string | null>
@@ -29,6 +34,8 @@ type GallerySlide = {
 }
 
 export function PhotoGallery({
+  header,
+  emptyText,
   photos,
   loading,
   getPhotoUrl,
@@ -116,12 +123,8 @@ export function PhotoGallery({
       id={SECTION_IDS.gallery}
       className="w-full border-y border-border/60 bg-secondary/50 py-8 shadow-inner sm:py-10"
     >
-      <div className="mb-8 px-4 text-center sm:px-6">
-        <p className="font-serif text-sm uppercase tracking-[0.3em] text-primary">Wspomnienia</p>
-        <h2 className="mt-2 font-serif text-4xl text-foreground">Galeria zdjęć</h2>
-        <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground">
-          Kliknij zdjęcie, aby je powiększyć. Dodawaj własne kadry przyciskiem w nagłówku.
-        </p>
+      <div className="px-4 sm:px-6">
+        <SectionHeading {...header} />
       </div>
 
       {loading && (
@@ -133,9 +136,7 @@ export function PhotoGallery({
       {!loading && slides.length === 0 && (
         <div className="flex flex-col items-center justify-center gap-2 py-24 text-center">
           <p className="font-serif text-2xl text-foreground">Galeria jest pusta</p>
-          <p className="text-sm text-muted-foreground">
-            Bądź pierwszą osobą, która doda zdjęcie z wesela!
-          </p>
+          {emptyText && <p className="whitespace-pre-line text-sm text-muted-foreground">{emptyText}</p>}
         </div>
       )}
 

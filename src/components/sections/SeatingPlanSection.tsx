@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { MoveHorizontal, Search } from 'lucide-react'
-import { weddingContent } from '@/config/weddingContent'
+import { seatingPlanContent as seating } from '@/config/seatingPlanContent'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import {
@@ -12,8 +12,6 @@ import {
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { SECTION_IDS } from '@/config/navigation'
-
-const { seating } = weddingContent
 
 export function SeatingPlanSection() {
   const [query, setQuery] = useState('')

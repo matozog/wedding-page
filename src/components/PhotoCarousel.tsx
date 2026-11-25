@@ -9,17 +9,14 @@ import {
 } from '@/components/ui/carousel'
 import { cn } from '@/lib/utils'
 
-const photoModules = import.meta.glob('../assets/couple/*', {
-  eager: true,
-  query: '?url',
-  import: 'default',
-}) as Record<string, string>
+export type CarouselPhoto = {
+  id: string
+  src: string
+  alt: string
+}
 
-const photos = Object.keys(photoModules)
-  .sort()
-  .map((path) => photoModules[path])
-
-export function PhotoCarousel() {
+// Karuzela zdjęć (sekcja "O nas"). Adresy podaje wywołujący.
+export function PhotoCarousel({ photos }: { photos: readonly CarouselPhoto[] }) {
   const [api, setApi] = useState<CarouselApi>()
   const [activeIndex, setActiveIndex] = useState(0)
 
@@ -37,11 +34,11 @@ export function PhotoCarousel() {
   return (
     <Carousel setApi={setApi} opts={{ align: 'start', loop: true }} className="px-8">
       <CarouselContent>
-        {photos.map((src, index) => (
-          <CarouselItem key={src} className="basis-4/5 sm:basis-1/2 lg:basis-1/3">
+        {photos.map((photo) => (
+          <CarouselItem key={photo.id} className="basis-4/5 sm:basis-1/2 lg:basis-1/3">
             <img
-              src={src}
-              alt={`Para młoda - zdjęcie ${index + 1}`}
+              src={photo.src}
+              alt={photo.alt}
               loading="lazy"
               className="aspect-[4/3] w-full rounded-lg border border-border/60 object-cover shadow-sm"
             />
@@ -53,9 +50,9 @@ export function PhotoCarousel() {
       <CarouselNext />
 
       <div className="mt-3 flex justify-center gap-1.5">
-        {photos.map((src, index) => (
+        {photos.map((photo, index) => (
           <button
-            key={src}
+            key={photo.id}
             type="button"
             aria-label={`Przejdź do zdjęcia ${index + 1}`}
             onClick={() => api?.scrollTo(index)}

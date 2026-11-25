@@ -31,7 +31,20 @@ export const fetchMyProfile = async (): Promise<Profile | null> => {
     displayName: data.display_name,
     email: session.user.email ?? null,
     isAnonymous: data.is_anonymous,
+    // Kolumna is_platform_admin też jest niedostępna - flagę zwraca RPC.
+    // Konto anonimowe nigdy nie jest super adminem.
+    isSuperAdmin: data.is_anonymous ? false : await fetchIsSuperAdmin(),
   }
+}
+
+const fetchIsSuperAdmin = async (): Promise<boolean> => {
+  const { data, error } = await supabase.rpc('is_platform_admin')
+
+  if (error) {
+    throw error
+  }
+
+  return data === true
 }
 
 // Nazwa wyświetlana jest globalna (jedna dla wszystkich wydarzeń).

@@ -1,25 +1,31 @@
-import { useCallback, useEffect } from 'react'
-import { Navigate, Route, Routes } from 'react-router'
-import { Settings } from 'lucide-react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
+import { Navigate, Route, Routes, useMatch, useNavigate } from 'react-router'
+import { CalendarCog, Settings } from 'lucide-react'
 import type { SectionNavLink } from '@/components/layout/SectionNav'
 import { CodeEntryScreen } from '@/components/screens/CodeEntryScreen'
+import { EventConfigScreen } from '@/components/screens/EventConfigScreen'
 import { EventGalleryScreen } from '@/components/screens/EventGalleryScreen'
+import { EventsManagementScreen } from '@/components/screens/EventsManagementScreen'
 import { ExpensesManagementScreen } from '@/components/screens/ExpensesManagementScreen'
 import { GuestsManagementScreen } from '@/components/screens/GuestsManagementScreen'
 import { ManagementScreen } from '@/components/screens/ManagementScreen'
 import { NicknameScreen } from '@/components/screens/NicknameScreen'
-import { weddingContent } from '@/config/weddingContent'
+import type { OrganizerAccess } from '@/components/screens/OrganizerGate'
+import { useEventPage } from '@/hooks/useEventPage'
 import { useEventSession } from '@/hooks/useEventSession'
 import { usePhotoUpload } from '@/hooks/usePhotoUpload'
 import { usePhotos } from '@/hooks/usePhotos'
 import { deletePhoto } from '@/lib/photosApi'
 import { ROUTES } from '@/lib/routes'
+import { readCachedTheme, writeCachedTheme } from '@/lib/themeCache'
+import type { ThemeKey } from '@/config/themes'
 import { canManageAllPhotos, canManageEvent, canViewManagement } from '@/types/role'
+import type { EventPreview } from '@/types/event'
 import type { Photo } from '@/types/photo'
 
-const MANAGEMENT_NAV_LINKS: readonly SectionNavLink[] = [
-  { to: ROUTES.management, label: 'Zarządzanie', icon: Settings },
-]
+const MANAGEMENT_NAV_LINK: SectionNavLink = { to: ROUTES.management, label: 'Zarządzanie', icon: Settings }
+// Tylko super admin - panel wszystkich wydarzeń.
+const EVENTS_NAV_LINK: SectionNavLink = { to: ROUTES.events, label: 'Wydarzenia', icon: CalendarCog }
 
 function App() {
   const {
@@ -33,17 +39,85 @@ function App() {
     submitting,
     userId,
     hasNickname,
+    isSuperAdmin,
+    hasGoogleAccount,
+    accountLabel,
     error: sessionError,
     setError: setSessionError,
     checkCode,
     saveNickname,
     loginWithGoogle,
+    loginAsOrganizer,
+    switchOrganizerAccount,
+    enterEvent,
+    syncEventChange,
     cancelPendingEvent,
     logout,
   } = useEventSession()
 
+  const navigate = useNavigate()
+  const isEventsRoute = useMatch(ROUTES.events) !== null
+  const configMatch = useMatch(ROUTES.eventConfig)
+  const isOrganizerRoute = isEventsRoute || configMatch !== null
+
   const eventId = session?.id ?? null
   const role = session?.role ?? null
+
+  // Konfiguracja strony wybranego wydarzenia (sekcje, treści, motyw).
+  const { page, setPage, error: pageError, notFound: pageNotFound, reload: reloadPage } = useEventPage(eventId)
+
+  // Po powrocie z panelu organizatora (tam konfigurację można zmienić)
+  // wczytujemy ją ponownie.
+  const wasOrganizerRouteRef = useRef(isOrganizerRoute)
+  useEffect(() => {
+    if (wasOrganizerRouteRef.current && !isOrganizerRoute) {
+      void reloadPage()
+    }
+    wasOrganizerRouteRef.current = isOrganizerRoute
+  }, [isOrganizerRoute, reloadPage])
+
+  // Motyw wybranego wydarzenia na wszystkich stronach (także w zarządzaniu
+  // i w panelu organizatora). Do czasu wczytania konfiguracji - ostatni
+  // zapamiętany motyw tego wydarzenia (bez mignięcia kolorów domyślnych).
+  // Ekrany wejścia (bez wybranego wydarzenia) - motyw domyślny.
+  const sessionId = session?.id ?? null
+  const pageTheme = sessionId && page?.event.id === sessionId ? page.event.theme : null
+  const cachedTheme = useMemo(() => (sessionId ? readCachedTheme(sessionId) : null), [sessionId])
+  const theme = pageTheme ?? cachedTheme
+
+  useEffect(() => {
+    if (sessionId && pageTheme) writeCachedTheme(sessionId, pageTheme)
+  }, [sessionId, pageTheme])
+
+  // useLayoutEffect - motyw jest ustawiony przed narysowaniem strony.
+  useLayoutEffect(() => {
+    const root = document.documentElement
+    if (theme) {
+      root.dataset.theme = theme
+    } else {
+      delete root.dataset.theme
+    }
+  }, [theme])
+
+  // Tytuł karty przeglądarki - nazwa wybranego wydarzenia.
+  const sessionName = session?.name ?? null
+  useEffect(() => {
+    document.title = sessionName ?? 'Strona wydarzenia'
+  }, [sessionName])
+
+  // Zmiana motywu na stronie konfiguracji - od razu widoczna, gdy dotyczy
+  // wybranego wydarzenia.
+  const handleThemeSaved = useCallback(
+    (savedEventId: string, savedTheme: ThemeKey) => {
+      writeCachedTheme(savedEventId, savedTheme)
+      setPage((current) =>
+        current && current.event.id === savedEventId
+          ? { ...current, event: { ...current.event, theme: savedTheme } }
+          : current
+      )
+    },
+    [setPage]
+  )
 
   const {
     photos,
@@ -103,7 +177,68 @@ function App() {
   const error = sessionError ?? photosError
   const canManage = canManageEvent(role)
   const canOpenManagement = canViewManagement(role)
-  const navLinks = canOpenManagement ? MANAGEMENT_NAV_LINKS : undefined
+  const navLinks = useMemo(() => {
+    const links = [
+      ...(canOpenManagement ? [MANAGEMENT_NAV_LINK] : []),
+      ...(isSuperAdmin ? [EVENTS_NAV_LINK] : []),
+    ]
+    return links.length > 0 ? links : undefined
+  }, [canOpenManagement, isSuperAdmin])
+
+  const handleEnterEvent = useCallback(
+    (event: EventPreview) => {
+      enterEvent(event)
+      navigate(ROUTES.management)
+    },
+    [enterEvent, navigate]
+  )
+
+  const handleOpenEventPage = useCallback(
+    (event: EventPreview) => {
+      enterEvent(event)
+      navigate(ROUTES.home)
+    },
+    [enterEvent, navigate]
+  )
+
+  const organizerAccess: OrganizerAccess = {
+    initializing,
+    submitting,
+    hasGoogleAccount,
+    isSuperAdmin,
+    accountLabel,
+    error: sessionError,
+    onLogin: loginAsOrganizer,
+    onSwitchAccount: switchOrganizerAccount,
+    onLogout: logout,
+  }
+
+  // Panel organizatora działa bez wybranego wydarzenia i bez pseudonimu -
+  // obsługujemy go przed ekranami kodu i pseudonimu.
+  if (isEventsRoute) {
+    return (
+      <EventsManagementScreen
+        access={organizerAccess}
+        currentEventId={eventId}
+        onEnter={handleEnterEvent}
+        onEventChanged={syncEventChange}
+      />
+    )
+  }
+
+  if (configMatch?.params.eventId) {
+    return (
+      <EventConfigScreen
+        key={configMatch.params.eventId}
+        eventId={configMatch.params.eventId}
+        access={organizerAccess}
+        currentEventId={eventId}
+        onOpenPage={handleOpenEventPage}
+        onEventChanged={syncEventChange}
+        onThemeSaved={handleThemeSaved}
+      />
+    )
+  }
 
   // Zapisane wydarzenie czeka na profil z bazy, a kod sprzed logowania Google
   // na dołączenie - bez tego mignąłby ekran pseudonimu.
@@ -122,6 +257,11 @@ function App() {
             <EventGalleryScreen
               eventName={session.name}
               nickname={nickname}
+              page={page?.event.id === session.id ? page : null}
+              pageError={pageError}
+              pageNotFound={pageNotFound}
+              onRetryPage={reloadPage}
+              onLeaveEvent={() => syncEventChange(session.id, null)}
               photos={photos}
               loadingPhotos={loadingPhotos}
               uploading={uploading}
@@ -201,7 +341,7 @@ function App() {
 
   return (
     <CodeEntryScreen
-      title={weddingContent.defaultTitle}
+      title="Witaj"
       code={code}
       error={sessionError}
       submitting={submitting}

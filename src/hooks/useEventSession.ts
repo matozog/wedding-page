@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
+import { adminEventExists } from '../lib/eventsAdminApi'
+import { ROUTES } from '../lib/routes'
 import {
   RATE_LIMIT_ERROR_CODE,
   checkEventCode,
@@ -21,7 +23,8 @@ import type { Profile } from '../types/profile'
 // użytkownika i rola zawsze pochodzą z bazy (profiles / event_members).
 type StoredSession = {
   session: EventSession
-  accessCode: string
+  // null - super admin wybrał wydarzenie z listy, bez kodu
+  accessCode: string | null
 }
 
 // Sprawdzony kod, który czeka na pseudonim albo powrót z Google.
@@ -34,7 +37,7 @@ const isStoredSession = (value: unknown): value is StoredSession => {
   if (typeof value !== 'object' || value === null) return false
   const { session, accessCode } = value as Partial<StoredSession>
   return (
-    typeof accessCode === 'string' &&
+    (typeof accessCode === 'string' || accessCode === null) &&
     typeof session?.id === 'string' &&
     typeof session.name === 'string' &&
     typeof session.role === 'string'
@@ -189,6 +192,8 @@ export function useEventSession() {
       }
 
       try {
+        let profileLoaded = false
+
         // Powrót z logowania Google: dokończ dołączenie do wydarzenia
         // (konto Google zawsze ma profil, więc pseudonim nie jest potrzebny).
         const waiting = pendingRef.current
@@ -208,22 +213,36 @@ export function useEventSession() {
             }
           }
         } else if (storedRef.current) {
-          // Rola mogła się zmienić (np. awans na EDITOR) albo użytkownik
-          // mógł zostać usunięty z wydarzenia.
           const current = storedRef.current
-          const role = await fetchMyEventRole(current.session.id)
+          const currentProfile = await refreshProfile()
+          profileLoaded = true
 
-          if (role) {
-            if (role !== current.session.role) {
-              updateStored({ ...current, session: { ...current.session, role } })
+          if (currentProfile?.isSuperAdmin) {
+            // Super admin ma dostęp bez członkostwa - wystarczy, że
+            // wydarzenie nadal istnieje.
+            if (!(await adminEventExists(current.session.id))) {
+              updateStored(null)
+              setError('Wybrane wydarzenie już nie istnieje.')
             }
           } else {
-            updateStored(null)
-            setError('Nie masz już dostępu do tego wydarzenia. Wpisz kod ponownie.')
+            // Rola mogła się zmienić (np. awans na EDITOR) albo użytkownik
+            // mógł zostać usunięty z wydarzenia.
+            const role = await fetchMyEventRole(current.session.id)
+
+            if (role) {
+              if (role !== current.session.role) {
+                updateStored({ ...current, session: { ...current.session, role } })
+              }
+            } else {
+              updateStored(null)
+              setError('Nie masz już dostępu do tego wydarzenia. Wpisz kod ponownie.')
+            }
           }
         }
 
-        await refreshProfile()
+        if (!profileLoaded) {
+          await refreshProfile()
+        }
       } catch (err) {
         console.error(err)
         setError(
@@ -361,9 +380,9 @@ export function useEventSession() {
 
     await runExclusive(async () => {
       // Sprawdzony kod czeka w sessionStorage na powrót z Google.
-      const current = storedRef.current
+      const current = storedRef.current?.accessCode ? storedRef.current : null
 
-      if (current) {
+      if (current?.accessCode) {
         updatePending({ event: current.session, accessCode: current.accessCode })
       }
 
@@ -388,6 +407,68 @@ export function useEventSession() {
     setError(null)
   }, [updatePending])
 
+  // Panel organizatora (/events) - logowanie Google z powrotem na ten adres.
+  // Wybrane wcześniej wydarzenie (np. sesja anonimowego gościa) przestaje
+  // obowiązywać, bo po zmianie konta i tak trzeba by je wybrać ponownie.
+  const loginAsOrganizer = useCallback(async () => {
+    setError(null)
+
+    await runExclusive(async () => {
+      updateStored(null)
+      updatePending(null)
+
+      try {
+        await signInWithGoogle({ returnPath: ROUTES.events, selectAccount: true })
+      } catch (err) {
+        console.error(err)
+        setError('Nie udało się zalogować przez Google.')
+      }
+    })
+  }, [runExclusive, updatePending, updateStored])
+
+  // Konto Google bez uprawnień organizatora - wylogowanie i wybór innego konta.
+  const switchOrganizerAccount = useCallback(async () => {
+    setError(null)
+
+    await runExclusive(async () => {
+      updateStored(null)
+      updatePending(null)
+      setProfile(null)
+
+      try {
+        await supabase.auth.signOut()
+        await signInWithGoogle({ returnPath: ROUTES.events, selectAccount: true })
+      } catch (err) {
+        console.error(err)
+        setError('Nie udało się zmienić konta.')
+      }
+    })
+  }, [runExclusive, updatePending, updateStored])
+
+  // Super admin wchodzi do wydarzenia z listy, bez kodu (dostęp daje mu baza).
+  const enterEvent = useCallback(
+    (event: EventPreview) => {
+      setError(null)
+      updatePending(null)
+      updateStored({ session: { ...event, role: 'ADMIN' }, accessCode: null })
+    },
+    [updatePending, updateStored]
+  )
+
+  // Zmiany wydarzeń w panelu super admina - wybrane wydarzenie nadąża za nimi.
+  const syncEventChange = useCallback(
+    (eventId: string, event: EventPreview | null) => {
+      const current = storedRef.current
+
+      if (current?.session.id !== eventId) {
+        return
+      }
+
+      updateStored(event ? { ...current, session: { ...current.session, ...event } } : null)
+    },
+    [updateStored]
+  )
+
   const logout = useCallback(() => {
     updateStored(null)
     updatePending(null)
@@ -398,22 +479,40 @@ export function useEventSession() {
     supabase.auth.signOut().catch((err) => console.error('Sign out error:', err))
   }, [updatePending, updateStored])
 
+  const isSuperAdmin = profile?.isSuperAdmin ?? false
+  const storedSession = stored?.session ?? null
+
+  // Super admin jest w każdym wydarzeniu traktowany jak ADMIN - tak samo
+  // traktuje go baza (has_event_role), nawet bez członkostwa.
+  const session = useMemo(
+    () => (storedSession && isSuperAdmin ? { ...storedSession, role: 'ADMIN' as const } : storedSession),
+    [isSuperAdmin, storedSession]
+  )
+
   return {
     code,
     setCode,
     nickname,
     setNickname,
-    session: stored?.session ?? null,
+    session,
     pendingEvent: pending?.event ?? null,
     initializing,
     submitting,
     userId: profile?.id ?? null,
     hasNickname: Boolean(profile?.displayName),
+    isSuperAdmin,
+    // Zalogowane konto Google (nie anonimowe) - panel organizatora.
+    hasGoogleAccount: profile !== null && !profile.isAnonymous,
+    accountLabel: profile?.displayName ?? profile?.email ?? '',
     error,
     setError,
     checkCode,
     saveNickname,
     loginWithGoogle,
+    loginAsOrganizer,
+    switchOrganizerAccount,
+    enterEvent,
+    syncEventChange,
     cancelPendingEvent,
     logout,
   }

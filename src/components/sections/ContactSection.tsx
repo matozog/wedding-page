@@ -1,50 +1,60 @@
 import { Mail, Phone } from 'lucide-react'
-import { weddingContent } from '@/config/weddingContent'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { SECTION_IDS } from '@/config/navigation'
+import { cn } from '@/lib/utils'
+import type { EventContact, SectionHeader } from '@/types/eventPage'
+import { SectionHeading } from './SectionHeading'
 
-export function ContactSection() {
-  const { contact } = weddingContent
+type ContactSectionProps = {
+  header: SectionHeader
+  contacts: readonly EventContact[]
+}
 
+const linkClassName =
+  'flex min-w-0 items-center gap-3 rounded-lg border border-border/70 bg-background/70 p-3 transition-colors hover:border-primary/40 hover:bg-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+
+// Kontakt - osoby z konfiguracji wydarzenia (etykieta, imię, e-mail, telefon).
+export function ContactSection({ header, contacts }: ContactSectionProps) {
   return (
     <section id={SECTION_IDS.contact} className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
-      <div className="mb-10 text-center">
-        <p className="font-serif text-sm uppercase tracking-[0.3em] text-primary">Kontakt</p>
-        <h2 className="mt-2 font-serif text-4xl text-foreground">Masz pytania?</h2>
+      <SectionHeading {...header} />
+
+      <div className={cn('mx-auto grid max-w-4xl gap-4', contacts.length > 1 && 'md:grid-cols-2')}>
+        {contacts.map((contact, index) => (
+          <Card key={index} className="border-border/80 bg-card/80">
+            <CardContent className="space-y-3 pt-6">
+              {(contact.label || contact.name) && (
+                <div className="text-center">
+                  {contact.label && (
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">{contact.label}</p>
+                  )}
+                  {contact.name && <p className="font-serif text-2xl text-foreground">{contact.name}</p>}
+                </div>
+              )}
+
+              {contact.email && (
+                <a href={`mailto:${contact.email}`} className={linkClassName}>
+                  <Mail className="size-5 shrink-0 text-primary" aria-hidden="true" />
+                  <div className="min-w-0">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">E-mail</p>
+                    <p className="truncate text-sm font-medium text-foreground">{contact.email}</p>
+                  </div>
+                </a>
+              )}
+
+              {contact.phone && (
+                <a href={`tel:${contact.phone.replace(/[\s()-]/g, '')}`} className={linkClassName}>
+                  <Phone className="size-5 shrink-0 text-primary" aria-hidden="true" />
+                  <div className="min-w-0">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">Telefon</p>
+                    <p className="text-sm font-medium text-foreground">{contact.phone}</p>
+                  </div>
+                </a>
+              )}
+            </CardContent>
+          </Card>
+        ))}
       </div>
-
-      <Card className="mx-auto max-w-2xl border-border/80 bg-card/80">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Skontaktuj się z nami</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-center text-sm text-muted-foreground">{contact.note}</p>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <a
-              href={`mailto:${contact.email}`}
-              className="flex items-center gap-3 rounded-lg border border-border/70 bg-background/70 p-4 transition-colors hover:border-primary/40 hover:bg-accent/30"
-            >
-              <Mail className="size-5 text-primary" />
-              <div>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">E-mail</p>
-                <p className="text-sm font-medium text-foreground">{contact.email}</p>
-              </div>
-            </a>
-
-            <a
-              href={`tel:${contact.phone.replace(/\s/g, '')}`}
-              className="flex items-center gap-3 rounded-lg border border-border/70 bg-background/70 p-4 transition-colors hover:border-primary/40 hover:bg-accent/30"
-            >
-              <Phone className="size-5 text-primary" />
-              <div>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">Telefon</p>
-                <p className="text-sm font-medium text-foreground">{contact.phone}</p>
-              </div>
-            </a>
-          </div>
-        </CardContent>
-      </Card>
     </section>
   )
 }
