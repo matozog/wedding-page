@@ -112,37 +112,39 @@ export const insertGuestGroup = async (
   return requireRow(data)
 }
 
-export const updateGuestGroup = async (id: string, input: GuestGroupInput): Promise<GuestGroup> => {
+// Grupa i (opcjonalnie) "od kogo" jej osób w jednej transakcji - osoby
+// dostają "od kogo" grupy, poza samą osobą zapraszającą (nie może wskazać
+// siebie). Bez uprawnień / gdy grupy nie ma - błąd PT404 z bazy.
+export const updateGuestGroup = async (
+  id: string,
+  input: GuestGroupInput,
+  applyToMembers: boolean
+): Promise<GuestGroup> => {
   const { data, error } = await supabase
-    .from('guest_groups')
-    .update(input)
-    .eq('id', id)
+    .rpc('update_guest_group', {
+      p_group_id: id,
+      p_name: input.name,
+      p_address: input.address ?? undefined,
+      p_default_inviter_id: input.default_inviter_id ?? undefined,
+      p_default_invited_jointly: input.default_invited_jointly,
+      p_apply_to_members: applyToMembers,
+    })
     .select(GUEST_GROUP_SELECT_FIELDS)
+    .single()
 
   if (error) {
     throw error
   }
 
-  return requireRow(data)
+  return data
 }
 
-// Ustawia "od kogo" wszystkim osobom z grupy - poza samą osobą zapraszającą,
-// jeśli należy do tej grupy (nie może wskazać siebie). Zwraca zmienione wiersze.
-export const setGroupMembersInviter = async (
-  groupId: string,
-  invitedBy: string | null,
-  jointly: boolean
-): Promise<Guest[]> => {
-  let query = supabase
+// Aktualne wiersze osób z grupy (np. po przeniesieniu na nie "od kogo").
+export const fetchGroupMembers = async (groupId: string): Promise<Guest[]> => {
+  const { data, error } = await supabase
     .from('guests')
-    .update({ invited_by_guest_id: invitedBy, invited_jointly: jointly })
+    .select(GUEST_SELECT_FIELDS)
     .eq('group_id', groupId)
-
-  if (invitedBy) {
-    query = query.neq('id', invitedBy)
-  }
-
-  const { data, error } = await query.select(GUEST_SELECT_FIELDS)
 
   if (error) {
     throw error

@@ -641,6 +641,34 @@ export type Database = {
       shares_event_with: { Args: { p_user_id: string }; Returns: boolean };
       storage_path_event_id: { Args: { p_name: string }; Returns: string };
       storage_path_owner: { Args: { p_name: string }; Returns: string };
+      update_guest_group: {
+        Args: {
+          p_address?: string;
+          p_apply_to_members?: boolean;
+          p_default_invited_jointly: boolean;
+          p_default_inviter_id?: string;
+          p_group_id: string;
+          p_name: string;
+        };
+        Returns: {
+          address: string | null;
+          created_at: string;
+          default_invited_jointly: boolean;
+          default_inviter_id: string | null;
+          event_id: string;
+          id: string;
+          invitation_sent_at: string | null;
+          name: string;
+          notes: string | null;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "guest_groups";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       upsert_own_profile: { Args: { p_display_name: string; p_uid: string }; Returns: undefined };
     };
     Enums: {

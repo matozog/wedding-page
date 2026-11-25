@@ -75,6 +75,45 @@ select ok((select invited_by_guest_id = :'host' from public.guests where id = :'
 delete from public.guests where id = :'host';
 select ok((select invited_by_guest_id is null from public.guests where id = :'kasia'), 'deleting inviter releases their guests');
 select ok((select count(*) = 4 from public.guests where event_id = :'ev'), 'only the deleted inviter is gone');
+
+-- update_guest_group ------------------------------------------------------------------
+select has_function('public', 'update_guest_group', array['uuid', 'text', 'boolean', 'text', 'uuid', 'boolean'], 'update_guest_group exists');
+select ok(not has_function_privilege('anon', 'public.update_guest_group(uuid, text, boolean, text, uuid, boolean)', 'execute'), 'anon cannot execute update_guest_group');
+
+insert into public.guests (event_id, first_name, is_inviter) values (:'ev', 'Gospodyni', true) returning id as hostess \gset
+insert into public.guest_groups (event_id, name) values (:'ev', 'Rodzina') returning id as fam \gset
+update public.guests set group_id = :'fam', invited_jointly = false, invited_by_guest_id = null where id in (:'tomek', :'hostess');
+insert into public.guests (event_id, first_name, group_id, invited_jointly) values (:'ev', 'Ola', :'fam', true) returning id as ola \gset
+
+-- name + inviter, applied to members (except the inviter themselves)
+select lives_ok(format($$select public.update_guest_group(%L, 'Rodzina G.', false, 'ul. Polna 1', %L, true)$$, :'fam', :'hostess'), 'admin updates group with members');
+select ok((select name = 'Rodzina G.' and address = 'ul. Polna 1' and default_inviter_id = :'hostess' and not default_invited_jointly
+           from public.guest_groups where id = :'fam'), 'group fields saved');
+select ok((select count(*) = 2 from public.guests where group_id = :'fam' and invited_by_guest_id = :'hostess' and not invited_jointly), 'members get the inviter');
+select ok((select invited_by_guest_id is null from public.guests where id = :'hostess'), 'inviter is not invited by themselves');
+
+-- without apply_to_members the members stay as they are
+select lives_ok(format($$select public.update_guest_group(%L, 'Rodzina G.', true)$$, :'fam'), 'group "jointly" without members');
+select ok((select default_invited_jointly and default_inviter_id is null and address is null from public.guest_groups where id = :'fam'), 'group set to jointly, nulls applied');
+select ok((select invited_by_guest_id = :'hostess' from public.guests where id = :'ola'), 'members untouched without apply_to_members');
+
+-- atomic: a non-inviter fails the whole call, the group is not changed either
+select throws_ok(format($$select public.update_guest_group(%L, 'Zła', false, null, %L, true)$$, :'fam', :'plain'), 'PT400', null, 'non-inviter rejected');
+select ok((select name = 'Rodzina G.' from public.guest_groups where id = :'fam'), 'group unchanged after failed call');
+select ok((select invited_by_guest_id = :'hostess' from public.guests where id = :'ola'), 'members unchanged after failed call');
+
+-- inviter from another event
+select throws_ok(format($$select public.update_guest_group(%L, 'X', false, null, %L, true)$$, :'fam', :'foreign_host'), '23503', null, 'inviter from another event rejected');
+
+-- unknown group
+select throws_ok(format($$select public.update_guest_group(%L, 'X', false)$$, gen_random_uuid()), 'PT404', null, 'unknown group -> PT404');
+
+-- EDITOR cannot update (group invisible for update -> PT404), nothing changes
+select pg_temp.act_as(:E);
+select throws_ok(format($$select public.update_guest_group(%L, 'Edytor', false, null, null, true)$$, :'fam'), 'PT404', null, 'editor cannot update group');
+select pg_temp.act_as(:A);
+select ok((select name = 'Rodzina G.' from public.guest_groups where id = :'fam'), 'group unchanged after editor call');
+select ok((select invited_by_guest_id = :'hostess' from public.guests where id = :'ola'), 'members unchanged after editor call');
 reset role;
 
 select * from finish();

@@ -9,3 +9,6 @@
 
 # Local secrets for config.toml env() substitution (e.g. Google OAuth)
 .env
+
+# Supabase Studio saved SQL snippets (local only)
+snippets/

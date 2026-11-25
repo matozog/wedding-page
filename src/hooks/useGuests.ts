@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   deleteGuest,
   deleteGuestGroup,
+  fetchGroupMembers,
   fetchGuestList,
   insertGuest,
   insertGuestGroup,
-  setGroupMembersInviter,
   updateGuest,
   updateGuestGroup,
 } from '../lib/guestsApi'
@@ -19,24 +19,30 @@ export function useGuests(eventId: string | null) {
   const [groups, setGroups] = useState<GuestGroup[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Numer ostatniego pobrania - odpowiedź starszego (np. dla poprzedniego
+  // wydarzenia) nie nadpisuje stanu.
+  const loadIdRef = useRef(0)
 
   const load = useCallback(async () => {
     if (!eventId) {
       return
     }
 
+    const loadId = ++loadIdRef.current
     setLoading(true)
     setError(null)
 
     try {
       const data = await fetchGuestList(eventId)
+      if (loadId !== loadIdRef.current) return
       setGuests(data.guests)
       setGroups(data.groups)
     } catch (err) {
+      if (loadId !== loadIdRef.current) return
       console.error('Guest list error:', err)
       setError('Nie udało się pobrać listy gości.')
     } finally {
-      setLoading(false)
+      if (loadId === loadIdRef.current) setLoading(false)
     }
   }, [eventId])
 
@@ -103,36 +109,50 @@ export function useGuests(eventId: string | null) {
     [requireEventId]
   )
 
-  // applyToMembers: "od kogo" grupy trafia też do osób, które już w niej są.
+  // applyToMembers: "od kogo" grupy trafia też do osób, które już w niej są
+  // (baza robi to w tej samej transakcji co zapis grupy).
   const editGroup = useCallback(
     async (id: string, input: GuestGroupInput, applyToMembers = false) => {
-      const group = await updateGuestGroup(id, input)
+      const group = await updateGuestGroup(id, input, applyToMembers)
       setGroups((current) => current.map((item) => (item.id === id ? group : item)))
 
       if (applyToMembers) {
-        const updated = await setGroupMembersInviter(
-          id,
-          input.default_inviter_id,
-          input.default_invited_jointly
-        )
-        const byId = new Map(updated.map((guest) => [guest.id, guest]))
-        setGuests((current) => current.map((item) => byId.get(item.id) ?? item))
+        // Zapis już się udał - nieudany odczyt osób nie jest błędem zapisu,
+        // wtedy po prostu pobieramy całą listę od nowa.
+        try {
+          const members = await fetchGroupMembers(id)
+          const byId = new Map(members.map((guest) => [guest.id, guest]))
+          setGuests((current) => current.map((item) => byId.get(item.id) ?? item))
+        } catch (err) {
+          console.error('Group members refresh error:', err)
+          void load()
+        }
       }
 
       return group
     },
-    []
+    [load]
   )
 
-  const removeGroup = useCallback(async (id: string, withGuests: boolean) => {
-    await deleteGuestGroup(id, withGuests)
-    setGroups((current) => current.filter((item) => item.id !== id))
-    setGuests((current) =>
-      withGuests
-        ? current.filter((item) => item.group_id !== id)
-        : current.map((item) => (item.group_id === id ? { ...item, group_id: null } : item))
-    )
-  }, [])
+  // Usunięte razem z grupą osoby zapraszające - baza zdjęła odwołania do
+  // nich (FK on delete set null), lokalnie robimy to samo.
+  const removeGroup = useCallback(
+    async (id: string, withGuests: boolean) => {
+      const removedInviters = withGuests
+        ? guests.filter((item) => item.group_id === id && item.is_inviter).map((item) => item.id)
+        : []
+
+      await deleteGuestGroup(id, withGuests)
+      setGroups((current) => current.filter((item) => item.id !== id))
+      setGuests((current) =>
+        withGuests
+          ? current.filter((item) => item.group_id !== id)
+          : current.map((item) => (item.group_id === id ? { ...item, group_id: null } : item))
+      )
+      removedInviters.forEach(releaseInviter)
+    },
+    [guests, releaseInviter]
+  )
 
   return {
     guests,

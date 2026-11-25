@@ -8,6 +8,9 @@ import { formatPlnShort } from '@/lib/money'
 import { countPl } from '@/lib/plural'
 import { ROUTES } from '@/lib/routes'
 
+// Kafelek działa jako link także bez podsumowania.
+const SUMMARY_ERROR = 'Nie udało się wczytać podsumowania.'
+
 type ManagementScreenProps = {
   eventId: string
   eventName: string
@@ -69,7 +72,7 @@ export function ManagementScreen({
   const guestSummary = stats
     ? `${countPl(stats.all.total, 'osoba', 'osoby', 'osób')} na liście · ${stats.expected.total} spodziewanych`
     : failed
-      ? ' '
+      ? SUMMARY_ERROR
       : 'Wczytywanie…'
 
   const expenseSummary = expenses.stats
@@ -82,7 +85,7 @@ export function ManagementScreen({
           .filter(Boolean)
           .join(' · ')
     : expenses.failed
-      ? ' '
+      ? SUMMARY_ERROR
       : 'Wczytywanie…'
 
   return (

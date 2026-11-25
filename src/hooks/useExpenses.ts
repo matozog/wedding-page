@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   deleteBudgetCategory,
   deleteExpense,
@@ -18,24 +18,30 @@ export function useExpenses(eventId: string | null) {
   const [categories, setCategories] = useState<BudgetCategory[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Numer ostatniego pobrania - odpowiedź starszego (np. dla poprzedniego
+  // wydarzenia) nie nadpisuje stanu.
+  const loadIdRef = useRef(0)
 
   const load = useCallback(async () => {
     if (!eventId) {
       return
     }
 
+    const loadId = ++loadIdRef.current
     setLoading(true)
     setError(null)
 
     try {
       const data = await fetchExpenseData(eventId)
+      if (loadId !== loadIdRef.current) return
       setExpenses(data.expenses)
       setCategories(data.categories)
     } catch (err) {
+      if (loadId !== loadIdRef.current) return
       console.error('Expenses error:', err)
       setError('Nie udało się pobrać wydatków.')
     } finally {
-      setLoading(false)
+      if (loadId === loadIdRef.current) setLoading(false)
     }
   }, [eventId])
 
