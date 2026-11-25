@@ -6,6 +6,7 @@ import {
   AddressField,
   AgeGroupField,
   AttendanceField,
+  EmailField,
   FirstNameField,
   GroupField,
   LastNameField,
@@ -62,6 +63,7 @@ export function GuestEditSheet({
           <GroupField {...fieldProps} groups={groups} />
           <AddressField {...fieldProps} groupAddress={groupAddress} />
           <PhoneField {...fieldProps} />
+          <EmailField {...fieldProps} />
 
           {errors.root?.message && (
             <p role="alert" className="text-sm text-destructive">

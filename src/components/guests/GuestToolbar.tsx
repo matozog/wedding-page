@@ -6,6 +6,8 @@ import { NativeSelect } from '@/components/ui/native-select'
 import {
   EMPTY_FILTERS,
   SORT_LABELS,
+  hasActiveFilters,
+  type GuestEmailFilter,
   type GuestFilters,
   type GuestSort,
   type GuestSortKey,
@@ -37,7 +39,7 @@ export function GuestSearch({
       <Input
         id={id}
         type="search"
-        placeholder="Szukaj: imię, nazwisko, telefon, grupa…"
+        placeholder="Szukaj: imię, nazwisko, telefon, e-mail, grupa…"
         className="pl-9"
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -51,6 +53,9 @@ type GuestToolbarProps = {
   groupView: boolean
   // Bez żadnej grupy przełącznik widoku grup nie ma sensu.
   hasGroups: boolean
+  // Filtr e-maila pokazujemy dopiero, gdy ktoś ma podany adres (albo filtr
+  // jest ustawiony).
+  hasEmails: boolean
   sort: GuestSort
   // Desktop: wszystko w jednej linii razem z wyszukiwarką. Wąski ekran:
   // wyszukiwarka osobno (przyklejona), sortowanie z listy (brak nagłówków).
@@ -71,6 +76,7 @@ export function GuestToolbar({
   filters,
   groupView,
   hasGroups,
+  hasEmails,
   sort,
   compact,
   canEdit,
@@ -86,8 +92,12 @@ export function GuestToolbar({
 }: GuestToolbarProps) {
   const id = useId()
   const inviters = useInviterOptions()
-  const hasFilters = filters.search !== '' || filters.attendance !== '' || filters.inviter !== ''
+  const hasFilters = hasActiveFilters(filters)
+  const showEmailFilter = hasEmails || filters.email !== ''
   const selectWidth = compact ? 'w-[calc(50%-0.25rem)]' : 'w-44'
+  // Wąski ekran: listy po dwie w wierszu, sortowanie na całą szerokość, gdy
+  // zostaje samo.
+  const filterSelectCount = 1 + Number(inviters.enabled) + Number(showEmailFilter)
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -140,8 +150,27 @@ export function GuestToolbar({
         </div>
       )}
 
+      {showEmailFilter && (
+        <div className={selectWidth}>
+          <label htmlFor={`${id}-email`} className="sr-only">
+            Filtr: e-mail
+          </label>
+          <NativeSelect
+            id={`${id}-email`}
+            value={filters.email}
+            onChange={(event) =>
+              onFiltersChange({ ...filters, email: event.target.value as GuestEmailFilter })
+            }
+          >
+            <option value="">E-mail: wszyscy</option>
+            <option value="WITH">Z e-mailem</option>
+            <option value="WITHOUT">Bez e-maila</option>
+          </NativeSelect>
+        </div>
+      )}
+
       {compact && (
-        <div className={inviters.enabled ? 'w-full' : selectWidth}>
+        <div className={filterSelectCount % 2 === 0 ? 'w-full' : selectWidth}>
           <label htmlFor={`${id}-sort`} className="sr-only">
             Sortowanie
           </label>

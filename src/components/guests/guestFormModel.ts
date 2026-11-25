@@ -19,6 +19,7 @@ export type GuestFormValues = {
   last_name: string
   address: string
   phone: string
+  email: string
   // "Od kogo": '' | JOINT_INVITER | id osoby zapraszającej
   inviter: string
   is_inviter: boolean
@@ -45,6 +46,7 @@ const toValues = (guest: Guest | null, groupId: string | null, groups: readonly 
     last_name: guest?.last_name ?? '',
     address: guest?.address ?? '',
     phone: guest?.phone ?? '',
+    email: guest?.email ?? '',
     inviter: guest ? guestInviterValue(guest) : group ? groupInviterValue(group) : '',
     is_inviter: guest?.is_inviter ?? false,
     attendance: guest?.attendance ?? 'UNKNOWN',
@@ -70,6 +72,7 @@ export const toSubmit = (values: GuestFormValues): GuestFormSubmit => {
       last_name: emptyToNull(values.last_name),
       address: emptyToNull(values.address),
       phone: emptyToNull(values.phone),
+      email: emptyToNull(values.email)?.toLowerCase() ?? null,
       is_inviter: values.is_inviter,
       invited_by_guest_id: invitedBy,
       invited_jointly: jointly,

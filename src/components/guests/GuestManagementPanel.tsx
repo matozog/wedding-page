@@ -8,6 +8,7 @@ import { useMediaQuery } from '@/hooks/useMediaQuery'
 import {
   DEFAULT_SORT,
   EMPTY_FILTERS,
+  hasActiveFilters,
   computeGuestStats,
   filterGuests,
   sortGroups,
@@ -106,7 +107,8 @@ export function GuestManagementPanel({ eventId, canEdit, canDelete }: GuestManag
     () => sortGuests(filtered, sort, groupsById, inviterOptions.labelOf),
     [filtered, sort, groupsById, inviterOptions]
   )
-  const hasFilters = filters.search !== '' || filters.attendance !== '' || filters.inviter !== ''
+  const hasFilters = hasActiveFilters(filters)
+  const hasEmails = useMemo(() => guests.some((guest) => guest.email), [guests])
 
   const sections = useMemo<GuestSection[]>(() => {
     if (!groupView) {
@@ -315,6 +317,7 @@ export function GuestManagementPanel({ eventId, canEdit, canDelete }: GuestManag
               filters={filters}
               groupView={groupView}
               hasGroups={hasGroups}
+              hasEmails={hasEmails}
               sort={sort}
               compact={!isDesktop}
               canEdit={canEdit}

@@ -7,6 +7,7 @@ import {
   AddressField,
   AgeGroupField,
   AttendanceField,
+  EmailField,
   FirstNameField,
   GroupField,
   LastNameField,
@@ -148,6 +149,7 @@ export function GuestEditRow({
         <TableCell colSpan={columnCount} className="pt-0">
           <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
             <AgeGroupField {...fieldProps} />
+            <EmailField {...fieldProps} />
             <PlusOneField {...fieldProps} />
             <InviterFlagField {...fieldProps} guestId={guestId} />
             {!showGroupColumn && <GroupField {...fieldProps} groups={groups} showLabel />}

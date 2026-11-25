@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import {
   AGE_GROUP_OPTIONS,
   ATTENDANCE_OPTIONS,
+  GUEST_EMAIL_PATTERN,
   GUEST_LIMITS,
   groupInviterValue,
   type GuestGroup,
@@ -138,6 +139,31 @@ export function PhoneField({ form, idPrefix, layout }: FieldProps) {
         {...form.register('phone', {
           maxLength: { value: GUEST_LIMITS.phone, message: `Maksymalnie ${GUEST_LIMITS.phone} znaków.` },
           pattern: { value: /^[0-9+()\-\s]*$/, message: 'Dozwolone cyfry, spacje i znaki + ( ) -' },
+        })}
+      />
+    </FieldShell>
+  )
+}
+
+// E-mail - pod przyszłe zaproszenia i przypomnienia. W tabeli nie ma
+// własnej kolumny, edytuje się go w drugim wierszu edycji / w panelu.
+export function EmailField({ form, idPrefix, layout }: FieldProps) {
+  const id = `${idPrefix}-email`
+  const error = form.formState.errors.email?.message
+
+  return (
+    <FieldShell id={id} label="E-mail" error={error} layout="stacked" className={layout === 'row' ? 'w-64' : undefined}>
+      <Input
+        {...fieldA11y(id, error)}
+        type="email"
+        inputMode="email"
+        className={cn(inputSize(layout), error && 'border-destructive')}
+        autoComplete="off"
+        spellCheck={false}
+        {...form.register('email', {
+          maxLength: { value: GUEST_LIMITS.email, message: `Maksymalnie ${GUEST_LIMITS.email} znaków.` },
+          validate: (value) =>
+            value.trim() === '' || GUEST_EMAIL_PATTERN.test(value.trim()) || 'Podaj poprawny adres e-mail.',
         })}
       />
     </FieldShell>

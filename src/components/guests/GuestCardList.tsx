@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, MapPin, Pencil, Phone, Trash2, UserPlus } from 'lucide-react'
+import { ChevronDown, ChevronRight, Mail, MapPin, Pencil, Phone, Trash2, UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { countPl } from '@/lib/plural'
 import {
@@ -81,6 +81,14 @@ function GuestCard({
             <span className="text-muted-foreground">—</span>
           )}
         </p>
+        {guest.email && (
+          <p className="flex min-w-0 items-center gap-2">
+            <Mail className="size-4 shrink-0 text-muted-foreground" aria-label="E-mail" />
+            <a href={`mailto:${guest.email}`} className="truncate underline-offset-2 hover:underline">
+              {guest.email}
+            </a>
+          </p>
+        )}
       </div>
 
       {canEdit && (

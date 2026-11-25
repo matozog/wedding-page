@@ -4,6 +4,7 @@ import {
   ArrowUpDown,
   ChevronDown,
   ChevronRight,
+  Mail,
   Pencil,
   Trash2,
   UserPlus,
@@ -209,16 +210,29 @@ function GuestRow({
         <AddressText guest={guest} groupsById={groupsById} />
       </TableCell>
       <TableCell className="whitespace-nowrap">
-        {guest.phone ? (
-          <a
-            href={`tel:${guest.phone.replace(/[^\d+]/g, '')}`}
-            className="rounded-sm underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            {guest.phone}
-          </a>
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        )}
+        <div className="flex items-center gap-2">
+          {guest.phone ? (
+            <a
+              href={`tel:${guest.phone.replace(/[^\d+]/g, '')}`}
+              className="rounded-sm underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {guest.phone}
+            </a>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          )}
+          {/* E-mail bez własnej kolumny - sama ikona, adres w podpowiedzi. */}
+          {guest.email && (
+            <a
+              href={`mailto:${guest.email}`}
+              className="rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              title={guest.email}
+              aria-label={`E-mail: ${guest.email}`}
+            >
+              <Mail className="size-4" aria-hidden="true" />
+            </a>
+          )}
+        </div>
       </TableCell>
       {inviters.enabled && (
         <TableCell>

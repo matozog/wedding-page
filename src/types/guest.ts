@@ -15,6 +15,7 @@ export type Guest = Pick<
   | 'last_name'
   | 'address'
   | 'phone'
+  | 'email'
   | 'attendance'
   | 'age_group'
   | 'is_plus_one'
@@ -34,7 +35,7 @@ export type GuestInput = Omit<Guest, 'id' | 'created_at'>
 export type GuestGroupInput = Omit<GuestGroup, 'id' | 'created_at'>
 
 export const GUEST_SELECT_FIELDS =
-  'id, group_id, first_name, last_name, address, phone, attendance, age_group, is_plus_one, is_inviter, invited_by_guest_id, invited_jointly, created_at' as const
+  'id, group_id, first_name, last_name, address, phone, email, attendance, age_group, is_plus_one, is_inviter, invited_by_guest_id, invited_jointly, created_at' as const
 export const GUEST_GROUP_SELECT_FIELDS =
   'id, name, address, default_inviter_id, default_invited_jointly, created_at' as const
 
@@ -65,10 +66,14 @@ export const AGE_GROUP_LABELS = Object.fromEntries(
   AGE_GROUP_OPTIONS.map(({ value, label }) => [value, label])
 ) as Record<GuestAgeGroup, string>
 
-// Limity z migracji 20261124100000_guest_management.sql.
+// Limity z migracji 20261124100000_guest_management.sql (e-mail:
+// 20261125143000_guest_email.sql - format jak event_contacts, małe litery).
+export const GUEST_EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
+
 export const GUEST_LIMITS = {
   name: 80,
   phone: 40,
+  email: 254,
   address: 300,
   groupName: 120,
 } as const

@@ -58,9 +58,16 @@ export type GuestFilters = {
   attendance: Attendance | ''
   // '' | NO_INVITER | JOINT_INVITER | id osoby zapraszającej
   inviter: string
+  email: GuestEmailFilter
 }
 
-export const EMPTY_FILTERS: GuestFilters = { search: '', attendance: '', inviter: '' }
+// Kto ma podany e-mail (np. przed wysyłką zaproszeń).
+export type GuestEmailFilter = '' | 'WITH' | 'WITHOUT'
+
+export const EMPTY_FILTERS: GuestFilters = { search: '', attendance: '', inviter: '', email: '' }
+
+export const hasActiveFilters = (filters: GuestFilters) =>
+  filters.search !== '' || filters.attendance !== '' || filters.inviter !== '' || filters.email !== ''
 
 // Wyszukiwanie bez wielkości liter i polskich znaków ("zolw" znajdzie "Żółw").
 const normalize = (value: string) =>
@@ -84,11 +91,12 @@ export const filterGuests = (
       const value = guestInviterValue(guest)
       if (filters.inviter === NO_INVITER ? value !== '' : value !== filters.inviter) return false
     }
+    if (filters.email && (filters.email === 'WITH') !== Boolean(guest.email)) return false
     if (terms.length === 0) return true
 
     const group = guest.group_id ? groupsById.get(guest.group_id) : undefined
     const haystack = normalize(
-      [guest.first_name, guest.last_name, guest.phone, guest.address, group?.name]
+      [guest.first_name, guest.last_name, guest.phone, guest.email, guest.address, group?.name]
         .filter(Boolean)
         .join(' ')
     )
