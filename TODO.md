@@ -47,5 +47,15 @@
     - kto może eksportować (super admin, admin wydarzenia, para młoda) – to dane osobowe gości (RODO);
     - opcjonalnie automatyczny backup cykliczny, poza ręcznym eksportem.
 
+- [ ] **6. Podgląd strony podczas edycji sekcji**
+  - Przy edycji sekcji strony wydarzenia brakuje podglądu efektu. Teraz trzeba przełączać się na stronę i sprawdzać.
+  - Pomysł: podgląd w oknie modalnym (duże okno, żeby sekcja się zmieściła), otwierany przyciskiem „Podgląd” przy edytowanej sekcji.
+  - Powiązane z pkt 2 (własne kolory motywu, tam też przyda się podgląd na żywo) i pkt 4 (przejście na publiczną stronę).
+  - Do ustalenia:
+    - podgląd tylko edytowanej sekcji czy całej strony z przewinięciem do niej;
+    - czy pokazywać **niezapisane** zmiany (podgląd przed zapisem), czy dopiero po zapisie;
+    - przełącznik widoku telefon / desktop (goście wejdą głównie z telefonów);
+    - alternatywa: podgląd obok formularza (podział ekranu) zamiast modala na szerokich ekranach.
+
 ## Zrobione
 
