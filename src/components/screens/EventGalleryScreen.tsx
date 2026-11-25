@@ -1,9 +1,8 @@
 import { Loader2 } from 'lucide-react'
-import { useMemo } from 'react'
+import { lazy, Suspense, useMemo } from 'react'
 import { AboutCoupleSection } from '@/components/sections/AboutCoupleSection'
 import { ContactSection } from '@/components/sections/ContactSection'
 import { LocationMapSection } from '@/components/sections/LocationMapSection'
-import { SeatingPlanSection } from '@/components/sections/SeatingPlanSection'
 import { WeddingScheduleSection } from '@/components/sections/WeddingScheduleSection'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import type { SectionNavLink } from '@/components/layout/SectionNav'
@@ -12,8 +11,14 @@ import { PhotoGallery } from '@/components/photos/PhotoGallery'
 import { Button } from '@/components/ui/button'
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
 import { SECTION_NAV_ITEMS } from '@/config/navigation'
+import { useSeatingPlan } from '@/hooks/useSeatingPlan'
 import type { EventPage, EventSectionKey } from '@/types/eventPage'
 import type { Photo } from '@/types/photo'
+
+// Plan sali (Konva) w osobnym pliku - pobierany tylko, gdy sekcja jest na stronie.
+const SeatingPlanSection = lazy(() =>
+  import('@/components/sections/SeatingPlanSection').then((module) => ({ default: module.SeatingPlanSection }))
+)
 
 type EventGalleryScreenProps = {
   eventName: string
@@ -39,15 +44,16 @@ type EventGalleryScreenProps = {
 }
 
 // Sekcja jest na stronie, gdy jest włączona w konfiguracji i ma treść
-// (np. plan bez punktów nie jest pokazywany).
-const visibleSections = (page: EventPage | null): ReadonlySet<EventSectionKey> => {
+// (np. plan bez punktów nie jest pokazywany). Plan sali - gdy jest
+// opublikowany i ma stoły (organizator widzi też nieopublikowany podgląd).
+const visibleSections = (page: EventPage | null, hasSeatingPlan: boolean): ReadonlySet<EventSectionKey> => {
   if (!page) return new Set()
 
   const about = page.sections.couple
   const hasContent: Record<EventSectionKey, boolean> = {
     gallery: true,
     couple: Boolean(about?.content_title || about?.content_body || page.facts.length > 0 || page.photos.length > 0),
-    seating: true,
+    seating: hasSeatingPlan,
     schedule: page.schedule.length > 0,
     location: page.locations.length > 0,
     contact: page.contacts.length > 0,
@@ -78,7 +84,10 @@ export function EventGalleryScreen({
   onDeletePhoto,
   onLogout,
 }: EventGalleryScreenProps) {
-  const visible = useMemo(() => visibleSections(page), [page])
+  const seatingEnabled = page?.sections.seating?.is_visible ? page.event.id : null
+  const { plan: seatingPlan } = useSeatingPlan(seatingEnabled)
+  const hasSeatingPlan = seatingPlan !== null && seatingPlan.tables.length > 0
+  const visible = useMemo(() => visibleSections(page, hasSeatingPlan), [page, hasSeatingPlan])
   const aboutPhotos = useMemo(() => page?.photos.filter((photo) => photo.section === 'couple') ?? [], [page])
   const navItems = useMemo(
     () =>
@@ -126,7 +135,15 @@ export function EventGalleryScreen({
           {visible.has('schedule') && (
             <WeddingScheduleSection header={page.sections.schedule} items={page.schedule} />
           )}
-          {visible.has('seating') && <SeatingPlanSection />}
+          {visible.has('seating') && seatingPlan && (
+            <Suspense fallback={null}>
+              <SeatingPlanSection
+                header={page.sections.seating}
+                hint={page.sections.seating.content_body}
+                plan={seatingPlan}
+              />
+            </Suspense>
+          )}
           {visible.has('location') && <LocationMapSection header={page.sections.location} locations={page.locations} />}
           {visible.has('contact') && <ContactSection header={page.sections.contact} contacts={page.contacts} />}
         </>

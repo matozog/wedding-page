@@ -1,4 +1,4 @@
-import { ChevronRight, Users, Wallet } from 'lucide-react'
+import { ChevronRight, LayoutGrid, Users, Wallet } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { ManagementLayout } from '@/components/layout/ManagementLayout'
@@ -106,6 +106,13 @@ export function ManagementScreen({
           title="Goście"
           description="Lista gości, grupy (rodziny) i przewidywana obecność."
           summary={guestSummary}
+        />
+        <ManagementTile
+          to={ROUTES.managementSeating}
+          icon={<LayoutGrid className="size-5" aria-hidden="true" />}
+          title="Plan sali"
+          description="Układ stołów, usadzanie gości i publikacja planu na stronie."
+          summary="Przejdź do edytora"
         />
         {canManage && (
           <ManagementTile

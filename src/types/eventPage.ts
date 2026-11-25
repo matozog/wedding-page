@@ -70,7 +70,7 @@ export type EventPage = {
 }
 
 // Sekcje w kolejności strony. navLabel - nazwa w menu, gdy nie ustawiono
-// własnej; configurable - ma edytowalną treść (plan sali na razie nie).
+// własnej; configurable - ma edytowalną treść.
 export const EVENT_SECTIONS: readonly {
   key: EventSectionKey
   label: string
@@ -80,7 +80,7 @@ export const EVENT_SECTIONS: readonly {
   { key: 'gallery', label: 'Galeria zdjęć', navLabel: 'Galeria', configurable: true },
   { key: 'couple', label: 'O nas', navLabel: 'O nas', configurable: true },
   { key: 'schedule', label: 'Plan wydarzenia', navLabel: 'Plan', configurable: true },
-  { key: 'seating', label: 'Plan sali', navLabel: 'Plan sali', configurable: false },
+  { key: 'seating', label: 'Plan sali', navLabel: 'Plan sali', configurable: true },
   { key: 'location', label: 'Jak dojechać', navLabel: 'Dojazd', configurable: true },
   { key: 'contact', label: 'Kontakt', navLabel: 'Kontakt', configurable: true },
   { key: 'footer', label: 'Stopka', navLabel: null, configurable: true },

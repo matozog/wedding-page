@@ -68,7 +68,8 @@ select throws_ok(format($$insert into public.guests (event_id, first_name, table
 select throws_ok(format($$insert into public.guests (event_id, first_name, table_id) values (%L, 'Ala', %L)$$, :'ev', :'tx'), '23503', null, 'table from another event rejected');
 select throws_ok(format($$insert into public.guests (event_id, first_name, group_id) values (%L, 'Ala', %L)$$, :'ev2', :'grp'), '23503', null, 'group from another event rejected');
 
-select lives_ok(format($$insert into public.guests (event_id, first_name, table_id, seat_number) values (%L, 'Ola', %L, 3)$$, :'ev', :'t1'), 'capacity is soft: 3rd guest at table for 2 accepted');
+select throws_ok(format($$insert into public.guests (event_id, first_name, table_id, seat_number) values (%L, 'Ola', %L, 3)$$, :'ev', :'t1'), '23514', null, 'seat above table capacity rejected');
+select lives_ok(format($$insert into public.guests (event_id, first_name, table_id, seat_number) values (%L, 'Ola', %L, 3)$$, :'ev', :'t2'), 'guest seated at table with default capacity 8');
 
 insert into public.budget_categories (event_id, name, planned_amount) values (:'ev', 'Sala', 30000) returning id as cat \gset
 insert into public.expenses (event_id, category_id, title, total_amount, due_date) values (:'ev', :'cat', 'Wynajem sali', 25000, '2027-05-01') returning id as exp \gset
@@ -81,7 +82,9 @@ select throws_ok(format($$insert into public.expense_payments (event_id, expense
 select pg_temp.act_as(:E);
 select ok((select count(*) = 3 from public.guests), 'editor sees guest list');
 update public.guests set attendance = 'CONFIRMED' where id = :'g1';
-select ok((select attendance = 'UNKNOWN' from public.guests where id = :'g1'), 'editor cannot edit guest (read-only guest list)');
+select ok((select attendance = 'CONFIRMED' from public.guests where id = :'g1'), 'editor edits guest (seating needs it)');
+delete from public.guests where id = :'g1';
+select ok((select count(*) = 1 from public.guests where id = :'g1'), 'editor cannot delete guest');
 select lives_ok(format($$insert into public.seating_tables (event_id, name) values (%L, 'Stół 3')$$, :'ev'), 'editor adds table');
 select ok((select notes = 'blisko DJ-a' from public.seating_tables where id = :'t1'), 'editor reads internal table notes');
 select ok((select count(*) = 0 from public.expenses) and (select count(*) = 0 from public.budget_categories) and (select count(*) = 0 from public.expense_payments), 'editor sees no budget/expenses/payments');
@@ -98,9 +101,13 @@ delete from public.seating_tables where id = :'t2';
 select pg_temp.expect_error(format($$insert into public.seating_tables (event_id, name) values (%L, 'X')$$, :'ev'), 'guest cannot add table');
 select ok((select count(*) = 0 from public.expenses), 'guest sees no expenses');
 
-select ok((select count(*) = 5 from public.get_seating_plan(:'ev')), 'seating plan: 3 seated rows + 2 empty tables');
-select ok((select guest_name = 'Jan Kowalski' from public.get_seating_plan(:'ev') where seat_number = 1), 'seating plan shows guest name');
-select ok((select guest_name = 'Osoba towarzysząca' from public.get_seating_plan(:'ev') where seat_number = 2), 'unnamed plus-one labelled');
+select ok(public.get_seating_plan(:'ev') is null, 'seating plan hidden from guests until published');
+select pg_temp.act_as(:A);
+select public.set_seating_published(:'ev', true);
+select pg_temp.act_as(:G);
+select ok((select jsonb_array_length(public.get_seating_plan(:'ev') -> 'tables') = 3), 'seating plan: 3 tables');
+select ok((select s ->> 'guest_name' = 'Jan Kowalski' from jsonb_array_elements(public.get_seating_plan(:'ev') -> 'seats') s where (s ->> 'seat_number')::int = 1), 'seating plan shows guest name');
+select ok((select s ->> 'guest_name' = 'Osoba towarzysząca' from jsonb_array_elements(public.get_seating_plan(:'ev') -> 'seats') s where (s ->> 'seat_number')::int = 2), 'unnamed plus-one labelled');
 select throws_ok(format($$select * from public.get_seating_plan(%L)$$, :'ev2'), 'PT403', null, 'seating plan of foreign event denied');
 
 select pg_temp.act_as(:O);

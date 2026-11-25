@@ -33,10 +33,11 @@ export type GuestListEditing =
 
 export type GuestListActions = {
   onEdit: (guest: Guest) => void
-  onDelete: (guest: Guest) => void
+  // brak = bez usuwania (EDITOR)
+  onDelete?: (guest: Guest) => void
   onAddToGroup: (groupId: string | null) => void
   onEditGroup: (group: GuestGroup) => void
-  onDeleteGroup: (group: GuestGroup) => void
+  onDeleteGroup?: (group: GuestGroup) => void
   onToggleCollapsed: (key: string) => void
   // Filtr listy po gościach danej osoby zapraszającej.
   onShowInvitees: (inviterId: string) => void
@@ -190,7 +191,8 @@ function GuestRow({
   canEdit: boolean
   actionsDisabled: boolean
   onEdit: (guest: Guest) => void
-  onDelete: (guest: Guest) => void
+  // brak = bez usuwania (EDITOR)
+  onDelete?: (guest: Guest) => void
   onShowInvitees: (inviterId: string) => void
 }) {
   const inviters = useInviterOptions()
@@ -244,17 +246,19 @@ function GuestRow({
             >
               <Pencil className="size-4" />
             </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-8 text-destructive hover:text-destructive"
-              aria-label={`Usuń: ${name}`}
-              title="Usuń"
-              onClick={() => onDelete(guest)}
-            >
-              <Trash2 className="size-4" />
-            </Button>
+            {onDelete && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-8 text-destructive hover:text-destructive"
+                aria-label={`Usuń: ${name}`}
+                title="Usuń"
+                onClick={() => onDelete(guest)}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            )}
           </div>
         </TableCell>
       )}
@@ -340,17 +344,19 @@ function SectionHeaderRow({
                   >
                     <Pencil className="size-4" />
                   </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-9 text-destructive hover:text-destructive"
-                    aria-label={`Usuń grupę: ${title}`}
-                    title="Usuń grupę"
-                    onClick={() => onDeleteGroup(group)}
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
+                  {onDeleteGroup && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-9 text-destructive hover:text-destructive"
+                      aria-label={`Usuń grupę: ${title}`}
+                      title="Usuń grupę"
+                      onClick={() => onDeleteGroup(group)}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  )}
                 </>
               )}
             </div>

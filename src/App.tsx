@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { Navigate, Route, Routes, useMatch, useNavigate } from 'react-router'
 import { CalendarCog, Settings } from 'lucide-react'
 import type { SectionNavLink } from '@/components/layout/SectionNav'
@@ -19,9 +19,16 @@ import { deletePhoto } from '@/lib/photosApi'
 import { ROUTES } from '@/lib/routes'
 import { readCachedTheme, writeCachedTheme } from '@/lib/themeCache'
 import type { ThemeKey } from '@/config/themes'
-import { canManageAllPhotos, canManageEvent, canViewManagement } from '@/types/role'
+import { canEditGuests, canManageAllPhotos, canManageEvent, canViewManagement } from '@/types/role'
 import type { EventPreview } from '@/types/event'
 import type { Photo } from '@/types/photo'
+
+// Edytor planu sali (Konva) w osobnym pliku.
+const SeatingManagementScreen = lazy(() =>
+  import('@/components/screens/SeatingManagementScreen').then((module) => ({
+    default: module.SeatingManagementScreen,
+  }))
+)
 
 const MANAGEMENT_NAV_LINK: SectionNavLink = { to: ROUTES.management, label: 'Zarządzanie', icon: Settings }
 // Tylko super admin - panel wszystkich wydarzeń.
@@ -176,6 +183,7 @@ function App() {
 
   const error = sessionError ?? photosError
   const canManage = canManageEvent(role)
+  const canEditGuestList = canEditGuests(role)
   const canOpenManagement = canViewManagement(role)
   const navLinks = useMemo(() => {
     const links = [
@@ -311,10 +319,26 @@ function App() {
               eventName={session.name}
               nickname={nickname}
               canView={canOpenManagement}
-              canEdit={canManage}
+              canEdit={canEditGuestList}
+              canDelete={canManage}
               error={sessionError}
               onLogout={logout}
             />
+          }
+        />
+        <Route
+          path={ROUTES.managementSeating}
+          element={
+            <Suspense fallback={null}>
+              <SeatingManagementScreen
+                eventId={session.id}
+                eventName={session.name}
+                nickname={nickname}
+                canView={canEditGuestList}
+                error={sessionError}
+                onLogout={logout}
+              />
+            </Suspense>
           }
         />
         <Route path="*" element={<Navigate to={ROUTES.home} replace />} />

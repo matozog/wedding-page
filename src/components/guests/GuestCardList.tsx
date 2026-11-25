@@ -36,7 +36,8 @@ function GuestCard({
   groupsById: ReadonlyMap<string, GuestGroup>
   canEdit: boolean
   onEdit: (guest: Guest) => void
-  onDelete: (guest: Guest) => void
+  // brak = bez usuwania (EDITOR)
+  onDelete?: (guest: Guest) => void
   onShowInvitees: (inviterId: string) => void
 }) {
   const inviters = useInviterOptions()
@@ -88,17 +89,19 @@ function GuestCard({
             <Pencil className="size-4" />
             Edytuj
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="text-destructive hover:text-destructive"
-            onClick={() => onDelete(guest)}
-            aria-label={`Usuń: ${name}`}
-          >
-            <Trash2 className="size-4" />
-            Usuń
-          </Button>
+          {onDelete && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              onClick={() => onDelete(guest)}
+              aria-label={`Usuń: ${name}`}
+            >
+              <Trash2 className="size-4" />
+              Usuń
+            </Button>
+          )}
         </div>
       )}
     </li>
@@ -186,16 +189,18 @@ export function GuestCardList({
                       >
                         <Pencil className="size-4" />
                       </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="size-9 text-destructive hover:text-destructive"
-                        aria-label={`Usuń grupę: ${title}`}
-                        onClick={() => actions.onDeleteGroup(group)}
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
+                      {actions.onDeleteGroup && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="size-9 text-destructive hover:text-destructive"
+                          aria-label={`Usuń grupę: ${title}`}
+                          onClick={() => actions.onDeleteGroup?.(group)}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      )}
                     </>
                   )}
                 </div>

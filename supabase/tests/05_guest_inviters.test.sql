@@ -60,11 +60,11 @@ insert into public.guest_groups (event_id, name, default_inviter_id) values (:'e
 select ok((select default_inviter_id = :'kasia' from public.guest_groups where id = :'grp'), 'group default inviter');
 select throws_ok(format($$insert into public.guest_groups (event_id, name, default_inviter_id) values (%L, 'X', %L)$$, :'ev', :'plain'), 'PT400', null, 'group default must be an inviter');
 
--- EDITOR is read-only ------------------------------------------------------------------
+-- EDITOR edits guests (seating) -------------------------------------------------------
 select pg_temp.act_as(:E);
-update public.guests set is_inviter = false where id = :'kasia';
+update public.guests set last_name = 'Edytowana' where id = :'kasia';
 select pg_temp.act_as(:A);
-select ok((select is_inviter from public.guests where id = :'kasia'), 'editor cannot unflag inviter');
+select ok((select last_name = 'Edytowana' from public.guests where id = :'kasia'), 'editor edits a guest');
 
 -- unflag / delete releases references ----------------------------------------------------
 update public.guests set is_inviter = false where id = :'kasia';
@@ -108,12 +108,11 @@ select throws_ok(format($$select public.update_guest_group(%L, 'X', false, null,
 -- unknown group
 select throws_ok(format($$select public.update_guest_group(%L, 'X', false)$$, gen_random_uuid()), 'PT404', null, 'unknown group -> PT404');
 
--- EDITOR cannot update (group invisible for update -> PT404), nothing changes
+-- EDITOR updates the group too (seating) - same RPC, RLS allows it
 select pg_temp.act_as(:E);
-select throws_ok(format($$select public.update_guest_group(%L, 'Edytor', false, null, null, true)$$, :'fam'), 'PT404', null, 'editor cannot update group');
+select lives_ok(format($$select public.update_guest_group(%L, 'Edytor', false, null, null, false)$$, :'fam'), 'editor updates group');
 select pg_temp.act_as(:A);
-select ok((select name = 'Rodzina G.' from public.guest_groups where id = :'fam'), 'group unchanged after editor call');
-select ok((select invited_by_guest_id = :'hostess' from public.guests where id = :'ola'), 'members unchanged after editor call');
+select ok((select name = 'Edytor' from public.guest_groups where id = :'fam'), 'group renamed by editor');
 reset role;
 
 select * from finish();

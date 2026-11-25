@@ -760,34 +760,130 @@ export type Database = {
         };
         Relationships: [];
       };
+      seating_landmarks: {
+        Row: {
+          created_at: string;
+          event_id: string;
+          height: number;
+          id: string;
+          label: string;
+          rotation: number;
+          width: number;
+          x: number;
+          y: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          event_id: string;
+          height: number;
+          id?: string;
+          label: string;
+          rotation?: number;
+          width: number;
+          x: number;
+          y: number;
+        };
+        Update: {
+          created_at?: string;
+          event_id?: string;
+          height?: number;
+          id?: string;
+          label?: string;
+          rotation?: number;
+          width?: number;
+          x?: number;
+          y?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "seating_landmarks_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      seating_rooms: {
+        Row: {
+          created_at: string;
+          event_id: string;
+          height: number;
+          is_published: boolean;
+          updated_at: string;
+          width: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          event_id: string;
+          height?: number;
+          is_published?: boolean;
+          updated_at?: string;
+          width?: number;
+        };
+        Update: {
+          created_at?: string;
+          event_id?: string;
+          height?: number;
+          is_published?: boolean;
+          updated_at?: string;
+          width?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "seating_rooms_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: true;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       seating_tables: {
         Row: {
-          capacity: number | null;
+          capacity: number;
           created_at: string;
           event_id: string;
           id: string;
           name: string;
           notes: string | null;
+          rotation: number;
+          seat_config: NonNullable<Json>;
+          shape: Database["public"]["Enums"]["seating_table_shape"];
           updated_at: string;
+          x: number;
+          y: number;
         };
         ComputedFields: never;
         Insert: {
-          capacity?: number | null;
+          capacity?: number;
           created_at?: string;
           event_id: string;
           id?: string;
           name: string;
           notes?: string | null;
+          rotation?: number;
+          seat_config?: NonNullable<Json>;
+          shape?: Database["public"]["Enums"]["seating_table_shape"];
           updated_at?: string;
+          x?: number;
+          y?: number;
         };
         Update: {
-          capacity?: number | null;
+          capacity?: number;
           created_at?: string;
           event_id?: string;
           id?: string;
           name?: string;
           notes?: string | null;
+          rotation?: number;
+          seat_config?: NonNullable<Json>;
+          shape?: Database["public"]["Enums"]["seating_table_shape"];
           updated_at?: string;
+          x?: number;
+          y?: number;
         };
         Relationships: [
           {
@@ -817,6 +913,10 @@ export type Database = {
         Args: { p_event_id: string; p_user_id: string };
         Returns: undefined;
       };
+      assign_seat: {
+        Args: { p_guest_id: string; p_seat_number?: number; p_table_id?: string };
+        Returns: undefined;
+      };
       check_event_code: {
         Args: { p_access_code: string };
         Returns: {
@@ -843,17 +943,7 @@ export type Database = {
         Returns: string;
       };
       get_event_page: { Args: { p_event_id: string }; Returns: Json };
-      get_seating_plan: {
-        Args: { p_event_id: string };
-        Returns: {
-          capacity: number;
-          guest_id: string;
-          guest_name: string;
-          seat_number: number;
-          table_id: string;
-          table_name: string;
-        }[];
-      };
+      get_seating_plan: { Args: { p_event_id: string }; Returns: Json };
       has_event_role: {
         Args: { p_event_id: string; p_roles: Database["public"]["Enums"]["event_role"][] };
         Returns: boolean;
@@ -927,6 +1017,16 @@ export type Database = {
         };
         Returns: undefined;
       };
+      save_seating_layout: {
+        Args: {
+          p_dry_run?: boolean;
+          p_event_id: string;
+          p_landmarks: Json;
+          p_room: Json;
+          p_tables: Json;
+        };
+        Returns: Json;
+      };
       set_display_name: { Args: { p_display_name: string }; Returns: undefined };
       set_event_access_code: {
         Args: { p_access_code: string; p_event_id: string };
@@ -947,6 +1047,10 @@ export type Database = {
           p_role: Database["public"]["Enums"]["event_role"];
           p_user_id: string;
         };
+        Returns: undefined;
+      };
+      set_seating_published: {
+        Args: { p_event_id: string; p_published: boolean };
         Returns: undefined;
       };
       shares_event_with: { Args: { p_user_id: string }; Returns: boolean };
@@ -999,6 +1103,7 @@ export type Database = {
         | "footer";
       expense_status: "UNPAID" | "DEPOSIT_PAID" | "PAID";
       guest_age_group: "ADULT" | "CHILD" | "INFANT";
+      seating_table_shape: "RECT" | "L" | "U";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -1122,6 +1227,7 @@ export const Constants = {
       event_section: ["gallery", "couple", "schedule", "seating", "location", "contact", "footer"],
       expense_status: ["UNPAID", "DEPOSIT_PAID", "PAID"],
       guest_age_group: ["ADULT", "CHILD", "INFANT"],
+      seating_table_shape: ["RECT", "L", "U"],
     },
   },
 } as const;

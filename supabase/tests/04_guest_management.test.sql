@@ -83,15 +83,19 @@ select throws_ok(format($$insert into public.guests (event_id, first_name) value
 select throws_ok(format($$update public.guests set address = %L where id = %L$$, repeat('x', 301), :'g1'), '23514', null, 'too long address rejected');
 select throws_ok(format($$update public.guests set attendance = 'MAYBE' where id = %L$$, :'g1'), '22P02', null, 'unknown attendance value rejected');
 
--- EDITOR: read-only --------------------------------------------------------------
+-- EDITOR: adds and edits (seating), cannot delete -------------------------------
 select pg_temp.act_as(:E);
 select ok((select count(*) = 3 from public.guests), 'editor sees guests');
 select ok((select count(*) = 1 from public.guest_groups), 'editor sees groups');
-select pg_temp.expect_error(format($$insert into public.guests (event_id, first_name) values (%L, 'X')$$, :'ev'), 'editor cannot add guest');
-select pg_temp.expect_error(format($$insert into public.guest_groups (event_id, name) values (%L, 'X')$$, :'ev'), 'editor cannot add group');
-update public.guests set first_name = 'Hacked' where id = :'g1';
-update public.guest_groups set name = 'Hacked' where id = :'grp';
+insert into public.guest_groups (event_id, name) values (:'ev', 'Od edytora') returning id as egrp \gset
+insert into public.guests (event_id, group_id, first_name) values (:'ev', :'egrp', 'Edek') returning id as eg \gset
+select ok((select count(*) = 1 from public.guests where id = :'eg'), 'editor adds group and guest');
+update public.guests set first_name = 'Jan', attendance = 'LIKELY' where id = :'g1';
+select ok((select attendance = 'LIKELY' from public.guests where id = :'g1'), 'editor edits guest');
+update public.guests set attendance = 'CONFIRMED' where id = :'g1';
 delete from public.guests where id = :'g3';
+delete from public.guests where id = :'eg';
+delete from public.guest_groups where id = :'egrp';
 select throws_ok(format($$select public.delete_guest_group(%L, true)$$, :'grp'), 'PT404', null, 'editor cannot delete group via RPC');
 
 -- GUEST / outsider -----------------------------------------------------------------
@@ -108,10 +112,11 @@ select pg_temp.act_as(:B);
 select throws_ok(format($$select public.delete_guest_group(%L)$$, :'grp2'), 'PT404', null, 'admin of event cannot delete group of other event');
 select pg_temp.expect_error(format($$insert into public.guests (event_id, first_name) values (%L, 'X')$$, :'ev2'), 'admin of event cannot add guest to other event');
 
--- nothing changed by the read-only roles -------------------------------------------
-select ok((select first_name = 'Jan' from public.guests where id = :'g1'), 'editor could not edit guest');
-select ok((select name = 'Kowalscy' from public.guest_groups where id = :'grp'), 'editor could not rename group');
+-- editor deletes nothing -----------------------------------------------------------
+select ok((select name = 'Kowalscy' from public.guest_groups where id = :'grp'), 'group untouched');
 select ok((select count(*) = 1 from public.guests where id = :'g3'), 'editor could not delete guest');
+select ok((select count(*) = 1 from public.guests where id = :'eg'), 'editor could not delete own guest');
+select ok((select count(*) = 1 from public.guest_groups where id = :'egrp'), 'editor could not delete own group');
 
 -- delete_guest_group ------------------------------------------------------------------
 insert into public.guest_groups (event_id, name) values (:'ev', 'Nowakowie') returning id as grp3 \gset

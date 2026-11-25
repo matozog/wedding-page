@@ -8,6 +8,8 @@ type GuestsManagementScreenProps = {
   nickname: string
   canView: boolean
   canEdit: boolean
+  // tylko ADMIN - usuwanie gości i grup
+  canDelete: boolean
   error: string | null
   onLogout: () => void
 }
@@ -18,6 +20,7 @@ export function GuestsManagementScreen({
   nickname,
   canView,
   canEdit,
+  canDelete,
   error,
   onLogout,
 }: GuestsManagementScreenProps) {
@@ -31,7 +34,7 @@ export function GuestsManagementScreen({
       fillViewport
       onLogout={onLogout}
     >
-      <GuestManagementPanel eventId={eventId} canEdit={canEdit} />
+      <GuestManagementPanel eventId={eventId} canEdit={canEdit} canDelete={canDelete} />
     </ManagementLayout>
   )
 }

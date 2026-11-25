@@ -53,11 +53,13 @@ const saveGroupView = (value: boolean) => {
 
 type GuestManagementPanelProps = {
   eventId: string
-  // ADMIN edytuje, EDITOR tylko podgląd (RLS egzekwuje to samo w bazie).
+  // ADMIN i EDITOR dodają i edytują (RLS egzekwuje to samo w bazie).
   canEdit: boolean
+  // Usuwanie gości i grup - tylko ADMIN.
+  canDelete: boolean
 }
 
-export function GuestManagementPanel({ eventId, canEdit }: GuestManagementPanelProps) {
+export function GuestManagementPanel({ eventId, canEdit, canDelete }: GuestManagementPanelProps) {
   const {
     guests,
     groups,
@@ -227,13 +229,15 @@ export function GuestManagementPanel({ eventId, canEdit }: GuestManagementPanelP
   // --- akcje listy --------------------------------------------------------------
   const listActions = {
     onEdit: (guest: Guest) => requestEditing({ mode: 'edit', guestId: guest.id }),
-    onDelete: setGuestToDelete,
+    onDelete: canDelete ? setGuestToDelete : undefined,
     onAddToGroup: startAdding,
     onEditGroup: (group: GuestGroup) => setGroupDialog(group),
-    onDeleteGroup: (group: GuestGroup) => {
-      setDeleteGroupMembers(false)
-      setGroupToDelete(group)
-    },
+    onDeleteGroup: canDelete
+      ? (group: GuestGroup) => {
+          setDeleteGroupMembers(false)
+          setGroupToDelete(group)
+        }
+      : undefined,
     onShowInvitees: (inviterId: string) => setFilters((current) => ({ ...current, inviter: inviterId })),
     onToggleCollapsed: (key: string) =>
       setCollapsed((current) => {

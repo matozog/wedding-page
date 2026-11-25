@@ -155,6 +155,19 @@ export function SectionsSettings({ page, onChange }: SectionsSettingsProps) {
             }}
           />
         )
+      case 'seating':
+        return (
+          <TextSectionEditor
+            eventId={eventId}
+            section="seating"
+            config={config}
+            withHeader
+            navLabelPlaceholder="Plan sali"
+            bodyLabel="Wskazówka pod wyszukiwarką"
+            bodyHint="Np. „Kliknij swoje miejsce, aby zobaczyć szczegóły.”. Układ stołów i gości ustawia organizator w Zarządzanie → Plan sali; goście widzą plan dopiero po jego opublikowaniu."
+            onSaved={(texts) => saveTexts('seating', texts)}
+          />
+        )
       case 'footer':
         return (
           <TextSectionEditor
