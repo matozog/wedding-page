@@ -3,10 +3,10 @@ import { useId, useRef } from 'react'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import { describeSaveError } from '@/components/events/eventFormat'
-import { saveEventSchedule } from '@/lib/eventPageApi'
-import { EVENT_PAGE_LIMITS, type ScheduleItem, type SectionHeader } from '@/types/eventPage'
+import { saveEventSection } from '@/lib/eventPageApi'
+import { EVENT_PAGE_LIMITS, type ScheduleItem, type SectionConfig, type SectionTexts } from '@/types/eventPage'
 import { FormFooter, ItemControls, SectionHeaderFields, TextField, type HeaderFormValues } from './fields'
-import { headerFromForm, headerToForm, maxLength, orNull } from './formUtils'
+import { textsFromForm, textsToForm, maxLength, orNull } from './formUtils'
 import { useSavedFlag } from './useSavedFlag'
 
 type ScheduleFormValues = HeaderFormValues & {
@@ -15,15 +15,15 @@ type ScheduleFormValues = HeaderFormValues & {
 
 type ScheduleEditorProps = {
   eventId: string
-  header: SectionHeader
+  config: SectionConfig
   items: readonly ScheduleItem[]
-  onSaved: (header: SectionHeader, items: ScheduleItem[]) => void
+  onSaved: (texts: SectionTexts, items: ScheduleItem[]) => void
 }
 
 const EMPTY_ITEM = { time: '', title: '', description: '' }
 
 // Plan wydarzenia: nagłówek sekcji i punkty (godzina, tytuł, opis).
-export function ScheduleEditor({ eventId, header, items, onSaved }: ScheduleEditorProps) {
+export function ScheduleEditor({ eventId, config, items, onSaved }: ScheduleEditorProps) {
   const id = useId()
   const busyRef = useRef(false)
   const {
@@ -36,7 +36,7 @@ export function ScheduleEditor({ eventId, header, items, onSaved }: ScheduleEdit
     formState: { errors, isSubmitting },
   } = useForm<ScheduleFormValues>({
     defaultValues: {
-      ...headerToForm(header),
+      ...textsToForm(config),
       items: items.map((item) => ({
         time: item.time_label ?? '',
         title: item.title,
@@ -52,7 +52,7 @@ export function ScheduleEditor({ eventId, header, items, onSaved }: ScheduleEdit
     if (busyRef.current) return
     busyRef.current = true
 
-    const nextHeader = headerFromForm(values)
+    const nextTexts = textsFromForm(values)
     const nextItems: ScheduleItem[] = values.items.map((item) => ({
       time_label: orNull(item.time),
       title: item.title.trim(),
@@ -60,8 +60,8 @@ export function ScheduleEditor({ eventId, header, items, onSaved }: ScheduleEdit
     }))
 
     try {
-      await saveEventSchedule(eventId, nextHeader, nextItems)
-      onSaved(nextHeader, nextItems)
+      await saveEventSection(eventId, 'schedule', nextTexts, nextItems)
+      onSaved(nextTexts, nextItems)
       reset(values)
       markSaved()
     } catch (err) {
@@ -76,7 +76,7 @@ export function ScheduleEditor({ eventId, header, items, onSaved }: ScheduleEdit
 
   return (
     <form noValidate onSubmit={(e) => void onSubmit(e)} className="flex flex-col gap-6">
-      <SectionHeaderFields idPrefix={`${id}-header`} register={register} errors={errors} />
+      <SectionHeaderFields idPrefix={`${id}-header`} register={register} errors={errors} navLabelPlaceholder="Plan" />
 
       <fieldset className="flex flex-col gap-3">
         <legend className="mb-2 text-sm font-medium text-foreground">Punkty planu ({fields.length})</legend>

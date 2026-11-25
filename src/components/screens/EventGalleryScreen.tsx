@@ -21,7 +21,10 @@ type EventGalleryScreenProps = {
   // Konfiguracja strony (sekcje, treści) - null do wczytania.
   page: EventPage | null
   pageError: string | null
+  // Wydarzenie nie istnieje albo użytkownik stracił do niego dostęp.
+  pageNotFound: boolean
   onRetryPage: () => void
+  onLeaveEvent: () => void
   photos: Photo[]
   loadingPhotos: boolean
   uploading: boolean
@@ -40,18 +43,19 @@ type EventGalleryScreenProps = {
 const visibleSections = (page: EventPage | null): ReadonlySet<EventSectionKey> => {
   if (!page) return new Set()
 
+  const about = page.sections.couple
   const hasContent: Record<EventSectionKey, boolean> = {
     gallery: true,
-    couple: true,
+    couple: Boolean(about?.content_title || about?.content_body || page.facts.length > 0 || page.photos.length > 0),
     seating: true,
     schedule: page.schedule.length > 0,
     location: page.locations.length > 0,
     contact: page.contacts.length > 0,
+    footer: true,
   }
 
-  return new Set(
-    SECTION_NAV_ITEMS.map((item) => item.key).filter((key) => page.sections[key]?.is_visible && hasContent[key])
-  )
+  const keys = Object.keys(hasContent) as EventSectionKey[]
+  return new Set(keys.filter((key) => page.sections[key]?.is_visible && hasContent[key]))
 }
 
 export function EventGalleryScreen({
@@ -59,7 +63,9 @@ export function EventGalleryScreen({
   nickname,
   page,
   pageError,
+  pageNotFound,
   onRetryPage,
+  onLeaveEvent,
   photos,
   loadingPhotos,
   uploading,
@@ -73,7 +79,15 @@ export function EventGalleryScreen({
   onLogout,
 }: EventGalleryScreenProps) {
   const visible = useMemo(() => visibleSections(page), [page])
-  const navItems = useMemo(() => SECTION_NAV_ITEMS.filter((item) => visible.has(item.key)), [visible])
+  const aboutPhotos = useMemo(() => page?.photos.filter((photo) => photo.section === 'couple') ?? [], [page])
+  const navItems = useMemo(
+    () =>
+      SECTION_NAV_ITEMS.filter((item) => visible.has(item.key)).map((item) => ({
+        ...item,
+        label: page?.sections[item.key]?.nav_label ?? item.label,
+      })),
+    [page, visible]
+  )
 
   return (
     <div className="min-h-svh bg-background">
@@ -93,6 +107,8 @@ export function EventGalleryScreen({
         <>
           {visible.has('gallery') && (
             <PhotoGallery
+              header={page.sections.gallery}
+              emptyText={page.sections.gallery.content_body}
               photos={photos}
               loading={loadingPhotos}
               getPhotoUrl={getPhotoUrl}
@@ -100,7 +116,13 @@ export function EventGalleryScreen({
               onDeletePhoto={onDeletePhoto}
             />
           )}
-          {visible.has('couple') && <AboutCoupleSection />}
+          {visible.has('couple') && (
+            <AboutCoupleSection
+              config={page.sections.couple}
+              facts={page.facts}
+              photos={aboutPhotos}
+            />
+          )}
           {visible.has('schedule') && (
             <WeddingScheduleSection header={page.sections.schedule} items={page.schedule} />
           )}
@@ -108,6 +130,14 @@ export function EventGalleryScreen({
           {visible.has('location') && <LocationMapSection header={page.sections.location} locations={page.locations} />}
           {visible.has('contact') && <ContactSection header={page.sections.contact} contacts={page.contacts} />}
         </>
+      ) : pageNotFound ? (
+        <div role="alert" className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-24 text-center">
+          <p className="font-serif text-2xl text-foreground">Nie masz dostępu do tego wydarzenia</p>
+          <p className="text-sm text-muted-foreground">Mogło zostać usunięte albo usunięto Cię z listy uczestników.</p>
+          <Button type="button" onClick={onLeaveEvent}>
+            Wpisz kod ponownie
+          </Button>
+        </div>
       ) : pageError ? (
         <div role="alert" className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-24">
           <ErrorMessage message={pageError} />
@@ -122,7 +152,7 @@ export function EventGalleryScreen({
         </div>
       )}
 
-      <SiteFooter eventName={eventName} />
+      {visible.has('footer') && <SiteFooter eventName={eventName} message={page?.sections.footer.content_body ?? null} />}
 
       {error && (
         <div className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2">

@@ -34,7 +34,7 @@ export function CodeEntryScreen({
     <OnboardingLayout
       step={1}
       title={title}
-      subtitle="Wpisz kod dostępu, aby wejść na stronę weselną."
+      subtitle="Wpisz kod dostępu, aby wejść na stronę wydarzenia."
     >
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-2">

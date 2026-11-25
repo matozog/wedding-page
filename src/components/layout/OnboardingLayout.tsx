@@ -11,7 +11,7 @@ type OnboardingLayoutProps = {
 
 export function OnboardingLayout({ step, title, subtitle, children }: OnboardingLayoutProps) {
   return (
-    <div className="flex min-h-svh items-center justify-center bg-gradient-to-b from-[#faf7f2] via-background to-[#f3ebe0] px-4 py-12">
+    <div className="flex min-h-svh items-center justify-center bg-gradient-to-b from-background via-background to-secondary px-4 py-12">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           {step && (

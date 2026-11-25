@@ -11,13 +11,14 @@ import { GuestsManagementScreen } from '@/components/screens/GuestsManagementScr
 import { ManagementScreen } from '@/components/screens/ManagementScreen'
 import { NicknameScreen } from '@/components/screens/NicknameScreen'
 import type { OrganizerAccess } from '@/components/screens/OrganizerGate'
-import { weddingContent } from '@/config/weddingContent'
 import { useEventPage } from '@/hooks/useEventPage'
 import { useEventSession } from '@/hooks/useEventSession'
 import { usePhotoUpload } from '@/hooks/usePhotoUpload'
 import { usePhotos } from '@/hooks/usePhotos'
 import { deletePhoto } from '@/lib/photosApi'
 import { ROUTES } from '@/lib/routes'
+import { readCachedTheme, writeCachedTheme } from '@/lib/themeCache'
+import type { ThemeKey } from '@/config/themes'
 import { canManageAllPhotos, canManageEvent, canViewManagement } from '@/types/role'
 import type { EventPreview } from '@/types/event'
 import type { Photo } from '@/types/photo'
@@ -63,7 +64,7 @@ function App() {
   const role = session?.role ?? null
 
   // Konfiguracja strony wybranego wydarzenia (sekcje, treści, motyw).
-  const { page, error: pageError, reload: reloadPage } = useEventPage(eventId)
+  const { page, setPage, error: pageError, notFound: pageNotFound, reload: reloadPage } = useEventPage(eventId)
 
   // Po powrocie z panelu organizatora (tam konfigurację można zmienić)
   // wczytujemy ją ponownie.
@@ -75,9 +76,19 @@ function App() {
     wasOrganizerRouteRef.current = isOrganizerRoute
   }, [isOrganizerRoute, reloadPage])
 
-  // Motyw wydarzenia na całej stronie (także w zarządzaniu). Panel
-  // organizatora i ekrany wejścia - motyw domyślny.
-  const theme = !isOrganizerRoute && session && page?.event.id === session.id ? page.event.theme : null
+  // Motyw wybranego wydarzenia na wszystkich stronach (także w zarządzaniu
+  // i w panelu organizatora). Do czasu wczytania konfiguracji - ostatni
+  // zapamiętany motyw tego wydarzenia (bez mignięcia kolorów domyślnych).
+  // Ekrany wejścia (bez wybranego wydarzenia) - motyw domyślny.
+  const sessionId = session?.id ?? null
+  const pageTheme = sessionId && page?.event.id === sessionId ? page.event.theme : null
+  const cachedTheme = useMemo(() => (sessionId ? readCachedTheme(sessionId) : null), [sessionId])
+  const theme = pageTheme ?? cachedTheme
+
+  useEffect(() => {
+    if (sessionId && pageTheme) writeCachedTheme(sessionId, pageTheme)
+  }, [sessionId, pageTheme])
+
   useEffect(() => {
     const root = document.documentElement
     if (theme) {
@@ -86,6 +97,26 @@ function App() {
       delete root.dataset.theme
     }
   }, [theme])
+
+  // Tytuł karty przeglądarki - nazwa wybranego wydarzenia.
+  const sessionName = session?.name ?? null
+  useEffect(() => {
+    document.title = sessionName ?? 'Strona wydarzenia'
+  }, [sessionName])
+
+  // Zmiana motywu na stronie konfiguracji - od razu widoczna, gdy dotyczy
+  // wybranego wydarzenia.
+  const handleThemeSaved = useCallback(
+    (savedEventId: string, savedTheme: ThemeKey) => {
+      writeCachedTheme(savedEventId, savedTheme)
+      setPage((current) =>
+        current && current.event.id === savedEventId
+          ? { ...current, event: { ...current.event, theme: savedTheme } }
+          : current
+      )
+    },
+    [setPage]
+  )
 
   const {
     photos,
@@ -203,6 +234,7 @@ function App() {
         currentEventId={eventId}
         onOpenPage={handleOpenEventPage}
         onEventChanged={syncEventChange}
+        onThemeSaved={handleThemeSaved}
       />
     )
   }
@@ -226,7 +258,9 @@ function App() {
               nickname={nickname}
               page={page?.event.id === session.id ? page : null}
               pageError={pageError}
+              pageNotFound={pageNotFound}
               onRetryPage={reloadPage}
+              onLeaveEvent={() => syncEventChange(session.id, null)}
               photos={photos}
               loadingPhotos={loadingPhotos}
               uploading={uploading}
@@ -306,7 +340,7 @@ function App() {
 
   return (
     <CodeEntryScreen
-      title={weddingContent.defaultTitle}
+      title="Witaj"
       code={code}
       error={sessionError}
       submitting={submitting}

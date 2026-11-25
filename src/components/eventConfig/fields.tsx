@@ -89,26 +89,43 @@ export function TextAreaField({
   )
 }
 
+// Teksty sekcji w formularzu (puste pole = brak tekstu).
 export type HeaderFormValues = {
+  navLabel: string
   eyebrow: string
   title: string
   description: string
+  contentTitle: string
+  contentBody: string
 }
 
-// Pola nagłówka sekcji - wspólne dla formularzy sekcji z treścią.
+// Pola nagłówka sekcji i nazwy w menu - wspólne dla formularzy sekcji.
 export function SectionHeaderFields<T extends FieldValues & HeaderFormValues>({
   idPrefix,
   register,
   errors,
+  navLabelPlaceholder,
 }: {
   idPrefix: string
   register: UseFormRegister<T>
   errors: FieldErrors<T>
+  // Domyślna nazwa w menu (gdy pole jest puste).
+  navLabelPlaceholder: string
 }) {
   const headerErrors = errors as FieldErrors<HeaderFormValues>
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
+      <div className="sm:col-span-2 sm:max-w-xs">
+        <TextField
+          id={`${idPrefix}-nav`}
+          label="Nazwa w menu"
+          placeholder={navLabelPlaceholder}
+          hint={`Puste pole - „${navLabelPlaceholder}”.`}
+          error={headerErrors.navLabel?.message}
+          registration={register('navLabel' as Path<T>, { maxLength: maxLength(EVENT_PAGE_LIMITS.navLabel) })}
+        />
+      </div>
       <TextField
         id={`${idPrefix}-eyebrow`}
         label="Napis nad tytułem"

@@ -3,10 +3,10 @@ import { useId, useRef } from 'react'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { describeSaveError } from '@/components/events/eventFormat'
 import { Button } from '@/components/ui/button'
-import { saveEventLocations } from '@/lib/eventPageApi'
-import { EVENT_PAGE_LIMITS, type EventLocation, type SectionHeader } from '@/types/eventPage'
+import { saveEventSection } from '@/lib/eventPageApi'
+import { EVENT_PAGE_LIMITS, type EventLocation, type SectionConfig, type SectionTexts } from '@/types/eventPage'
 import { FormFooter, ItemControls, SectionHeaderFields, TextField, type HeaderFormValues } from './fields'
-import { headerFromForm, headerToForm, maxLength, orNull } from './formUtils'
+import { textsFromForm, textsToForm, maxLength, orNull } from './formUtils'
 import { useSavedFlag } from './useSavedFlag'
 
 type LocationsFormValues = HeaderFormValues & {
@@ -15,15 +15,15 @@ type LocationsFormValues = HeaderFormValues & {
 
 type LocationsEditorProps = {
   eventId: string
-  header: SectionHeader
+  config: SectionConfig
   locations: readonly EventLocation[]
-  onSaved: (header: SectionHeader, locations: EventLocation[]) => void
+  onSaved: (texts: SectionTexts, locations: EventLocation[]) => void
 }
 
 const EMPTY_LOCATION = { label: '', name: '', address: '', showMap: true }
 
 // Jak dojechać: nagłówek sekcji i adresy. Mapa jest wyszukiwana po adresie.
-export function LocationsEditor({ eventId, header, locations, onSaved }: LocationsEditorProps) {
+export function LocationsEditor({ eventId, config, locations, onSaved }: LocationsEditorProps) {
   const id = useId()
   const busyRef = useRef(false)
   const {
@@ -36,7 +36,7 @@ export function LocationsEditor({ eventId, header, locations, onSaved }: Locatio
     formState: { errors, isSubmitting },
   } = useForm<LocationsFormValues>({
     defaultValues: {
-      ...headerToForm(header),
+      ...textsToForm(config),
       items: locations.map((place) => ({
         label: place.label ?? '',
         name: place.name,
@@ -53,7 +53,7 @@ export function LocationsEditor({ eventId, header, locations, onSaved }: Locatio
     if (busyRef.current) return
     busyRef.current = true
 
-    const nextHeader = headerFromForm(values)
+    const nextTexts = textsFromForm(values)
     const nextLocations: EventLocation[] = values.items.map((item) => ({
       label: orNull(item.label),
       name: item.name.trim(),
@@ -62,8 +62,8 @@ export function LocationsEditor({ eventId, header, locations, onSaved }: Locatio
     }))
 
     try {
-      await saveEventLocations(eventId, nextHeader, nextLocations)
-      onSaved(nextHeader, nextLocations)
+      await saveEventSection(eventId, 'location', nextTexts, nextLocations)
+      onSaved(nextTexts, nextLocations)
       reset(values)
       markSaved()
     } catch (err) {
@@ -78,7 +78,7 @@ export function LocationsEditor({ eventId, header, locations, onSaved }: Locatio
 
   return (
     <form noValidate onSubmit={(e) => void onSubmit(e)} className="flex flex-col gap-6">
-      <SectionHeaderFields idPrefix={`${id}-header`} register={register} errors={errors} />
+      <SectionHeaderFields idPrefix={`${id}-header`} register={register} errors={errors} navLabelPlaceholder="Dojazd" />
 
       <fieldset className="flex flex-col gap-3">
         <legend className="mb-2 text-sm font-medium text-foreground">Adresy ({fields.length})</legend>

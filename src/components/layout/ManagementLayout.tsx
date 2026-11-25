@@ -28,7 +28,7 @@ type ManagementLayoutProps = {
 }
 
 // Wspólny układ podstron zarządzania. Niezależny od rodzaju wydarzenia -
-// bez treści ze strony wesela (weddingContent).
+// bez treści strony wydarzenia.
 export function ManagementLayout({
   eventName,
   nickname,

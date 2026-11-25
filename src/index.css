@@ -33,8 +33,10 @@
 
 /* Motyw domyślny (Złoty piasek). Pozostałe palety - niżej, wybierane
    atrybutem data-theme (na <html> albo na fragmencie, np. podgląd). */
+/* color-scheme: light - fragment z jasną paletą wewnątrz ciemnej (podgląd). */
 :root,
 [data-theme='sand'] {
+  color-scheme: light;
   --background: 38 40% 97%;
   --foreground: 25 18% 22%;
   --card: 36 35% 95%;
@@ -58,6 +60,7 @@
 }
 
 [data-theme='sage'] {
+  color-scheme: light;
   --background: 90 20% 97%;
   --foreground: 150 18% 17%;
   --card: 95 18% 94%;
@@ -78,6 +81,7 @@
 }
 
 [data-theme='blush'] {
+  color-scheme: light;
   --background: 350 40% 98%;
   --foreground: 345 22% 21%;
   --card: 350 35% 96%;
@@ -98,6 +102,7 @@
 }
 
 [data-theme='navy'] {
+  color-scheme: light;
   --background: 220 30% 97%;
   --foreground: 222 40% 16%;
   --card: 220 28% 95%;
@@ -118,6 +123,7 @@
 }
 
 [data-theme='lavender'] {
+  color-scheme: light;
   --background: 265 35% 98%;
   --foreground: 260 25% 20%;
   --card: 265 30% 96%;
@@ -138,6 +144,7 @@
 }
 
 [data-theme='terracotta'] {
+  color-scheme: light;
   --background: 30 35% 97%;
   --foreground: 15 25% 18%;
   --card: 28 35% 94%;
@@ -155,6 +162,96 @@
   --border: 25 25% 85%;
   --input: 25 25% 85%;
   --ring: 14 55% 44%;
+}
+
+/* Ciemne motywy - natywne kontrolki (data, lista, przewijanie) też ciemne. */
+
+[data-theme='midnight'] {
+  color-scheme: dark;
+  --background: 224 35% 10%;
+  --foreground: 220 25% 92%;
+  --card: 224 30% 14%;
+  --card-foreground: 220 25% 92%;
+  --popover: 224 30% 14%;
+  --popover-foreground: 220 25% 92%;
+  --primary: 42 65% 62%;
+  --primary-foreground: 224 35% 10%;
+  --secondary: 224 25% 20%;
+  --secondary-foreground: 220 25% 90%;
+  --muted: 224 22% 18%;
+  --muted-foreground: 220 12% 70%;
+  --accent: 230 25% 26%;
+  --accent-foreground: 220 25% 92%;
+  --destructive: 0 70% 58%;
+  --border: 224 20% 24%;
+  --input: 224 20% 24%;
+  --ring: 42 65% 62%;
+}
+
+[data-theme='graphite'] {
+  color-scheme: dark;
+  --background: 0 0% 11%;
+  --foreground: 40 15% 92%;
+  --card: 0 0% 15%;
+  --card-foreground: 40 15% 92%;
+  --popover: 0 0% 15%;
+  --popover-foreground: 40 15% 92%;
+  --primary: 40 55% 60%;
+  --primary-foreground: 0 0% 10%;
+  --secondary: 0 0% 21%;
+  --secondary-foreground: 40 10% 90%;
+  --muted: 0 0% 19%;
+  --muted-foreground: 40 6% 70%;
+  --accent: 30 10% 26%;
+  --accent-foreground: 40 15% 92%;
+  --destructive: 0 70% 58%;
+  --border: 0 0% 25%;
+  --input: 0 0% 25%;
+  --ring: 40 55% 60%;
+}
+
+[data-theme='forest'] {
+  color-scheme: dark;
+  --background: 155 30% 9%;
+  --foreground: 140 15% 92%;
+  --card: 155 25% 13%;
+  --card-foreground: 140 15% 92%;
+  --popover: 155 25% 13%;
+  --popover-foreground: 140 15% 92%;
+  --primary: 140 35% 60%;
+  --primary-foreground: 155 30% 9%;
+  --secondary: 155 20% 19%;
+  --secondary-foreground: 140 15% 90%;
+  --muted: 155 18% 17%;
+  --muted-foreground: 140 8% 70%;
+  --accent: 40 30% 25%;
+  --accent-foreground: 140 15% 92%;
+  --destructive: 0 70% 58%;
+  --border: 155 15% 23%;
+  --input: 155 15% 23%;
+  --ring: 140 35% 60%;
+}
+
+[data-theme='wine'] {
+  color-scheme: dark;
+  --background: 345 30% 10%;
+  --foreground: 20 25% 92%;
+  --card: 345 28% 14%;
+  --card-foreground: 20 25% 92%;
+  --popover: 345 28% 14%;
+  --popover-foreground: 20 25% 92%;
+  --primary: 15 60% 68%;
+  --primary-foreground: 345 30% 10%;
+  --secondary: 345 22% 20%;
+  --secondary-foreground: 20 20% 90%;
+  --muted: 345 20% 18%;
+  --muted-foreground: 20 10% 72%;
+  --accent: 345 25% 26%;
+  --accent-foreground: 20 25% 92%;
+  --destructive: 0 70% 58%;
+  --border: 345 18% 25%;
+  --input: 345 18% 25%;
+  --ring: 15 60% 68%;
 }
 
 @layer base {

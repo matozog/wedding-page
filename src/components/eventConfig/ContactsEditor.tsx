@@ -3,10 +3,10 @@ import { useId, useRef } from 'react'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { describeSaveError } from '@/components/events/eventFormat'
 import { Button } from '@/components/ui/button'
-import { saveEventContacts } from '@/lib/eventPageApi'
-import { EVENT_PAGE_LIMITS, type EventContact, type SectionHeader } from '@/types/eventPage'
+import { saveEventSection } from '@/lib/eventPageApi'
+import { EVENT_PAGE_LIMITS, type EventContact, type SectionConfig, type SectionTexts } from '@/types/eventPage'
 import { FormFooter, ItemControls, SectionHeaderFields, TextField, type HeaderFormValues } from './fields'
-import { EMAIL_PATTERN, PHONE_PATTERN, headerFromForm, headerToForm, maxLength, orNull } from './formUtils'
+import { EMAIL_PATTERN, PHONE_PATTERN, textsFromForm, textsToForm, maxLength, orNull } from './formUtils'
 import { useSavedFlag } from './useSavedFlag'
 
 type ContactFormItem = { label: string; name: string; email: string; phone: string }
@@ -17,15 +17,15 @@ type ContactsFormValues = HeaderFormValues & {
 
 type ContactsEditorProps = {
   eventId: string
-  header: SectionHeader
+  config: SectionConfig
   contacts: readonly EventContact[]
-  onSaved: (header: SectionHeader, contacts: EventContact[]) => void
+  onSaved: (texts: SectionTexts, contacts: EventContact[]) => void
 }
 
 const EMPTY_CONTACT: ContactFormItem = { label: '', name: '', email: '', phone: '' }
 
 // Kontakt: nagłówek sekcji, opis i osoby (etykieta, imię, e-mail, telefon).
-export function ContactsEditor({ eventId, header, contacts, onSaved }: ContactsEditorProps) {
+export function ContactsEditor({ eventId, config, contacts, onSaved }: ContactsEditorProps) {
   const id = useId()
   const busyRef = useRef(false)
   const {
@@ -38,7 +38,7 @@ export function ContactsEditor({ eventId, header, contacts, onSaved }: ContactsE
     formState: { errors, isSubmitting },
   } = useForm<ContactsFormValues>({
     defaultValues: {
-      ...headerToForm(header),
+      ...textsToForm(config),
       items: contacts.map((contact) => ({
         label: contact.label ?? '',
         name: contact.name ?? '',
@@ -55,7 +55,7 @@ export function ContactsEditor({ eventId, header, contacts, onSaved }: ContactsE
     if (busyRef.current) return
     busyRef.current = true
 
-    const nextHeader = headerFromForm(values)
+    const nextTexts = textsFromForm(values)
     const nextContacts: EventContact[] = values.items.map((item) => ({
       label: orNull(item.label),
       name: orNull(item.name),
@@ -64,8 +64,8 @@ export function ContactsEditor({ eventId, header, contacts, onSaved }: ContactsE
     }))
 
     try {
-      await saveEventContacts(eventId, nextHeader, nextContacts)
-      onSaved(nextHeader, nextContacts)
+      await saveEventSection(eventId, 'contact', nextTexts, nextContacts)
+      onSaved(nextTexts, nextContacts)
       reset(values)
       markSaved()
     } catch (err) {
@@ -80,7 +80,7 @@ export function ContactsEditor({ eventId, header, contacts, onSaved }: ContactsE
 
   return (
     <form noValidate onSubmit={(e) => void onSubmit(e)} className="flex flex-col gap-6">
-      <SectionHeaderFields idPrefix={`${id}-header`} register={register} errors={errors} />
+      <SectionHeaderFields idPrefix={`${id}-header`} register={register} errors={errors} navLabelPlaceholder="Kontakt" />
 
       <fieldset className="flex flex-col gap-3">
         <legend className="mb-2 text-sm font-medium text-foreground">Osoby do kontaktu ({fields.length})</legend>

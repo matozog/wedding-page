@@ -59,6 +59,39 @@ export type Database = {
           },
         ];
       };
+      event_about_facts: {
+        Row: {
+          event_id: string;
+          id: string;
+          label: string;
+          position: number;
+          value: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          event_id: string;
+          id?: string;
+          label: string;
+          position: number;
+          value: string;
+        };
+        Update: {
+          event_id?: string;
+          id?: string;
+          label?: string;
+          position?: number;
+          value?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "event_about_facts_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       event_contacts: {
         Row: {
           email: string | null;
@@ -174,6 +207,45 @@ export type Database = {
           },
         ];
       };
+      event_page_photos: {
+        Row: {
+          alt_text: string | null;
+          created_at: string;
+          event_id: string;
+          id: string;
+          position: number;
+          section: Database["public"]["Enums"]["event_section"];
+          storage_path: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          alt_text?: string | null;
+          created_at?: string;
+          event_id: string;
+          id?: string;
+          position?: number;
+          section: Database["public"]["Enums"]["event_section"];
+          storage_path: string;
+        };
+        Update: {
+          alt_text?: string | null;
+          created_at?: string;
+          event_id?: string;
+          id?: string;
+          position?: number;
+          section?: Database["public"]["Enums"]["event_section"];
+          storage_path?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "event_page_photos_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       event_schedule_items: {
         Row: {
           description: string | null;
@@ -212,27 +284,36 @@ export type Database = {
       };
       event_sections: {
         Row: {
+          content_body: string | null;
+          content_title: string | null;
           description: string | null;
           event_id: string;
           eyebrow: string | null;
           is_visible: boolean;
+          nav_label: string | null;
           section: Database["public"]["Enums"]["event_section"];
           title: string | null;
         };
         ComputedFields: never;
         Insert: {
+          content_body?: string | null;
+          content_title?: string | null;
           description?: string | null;
           event_id: string;
           eyebrow?: string | null;
           is_visible?: boolean;
+          nav_label?: string | null;
           section: Database["public"]["Enums"]["event_section"];
           title?: string | null;
         };
         Update: {
+          content_body?: string | null;
+          content_title?: string | null;
           description?: string | null;
           event_id?: string;
           eyebrow?: string | null;
           is_visible?: boolean;
+          nav_label?: string | null;
           section?: Database["public"]["Enums"]["event_section"];
           title?: string | null;
         };
@@ -723,6 +804,15 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      add_event_page_photo: {
+        Args: {
+          p_alt_text?: string;
+          p_event_id: string;
+          p_section: Database["public"]["Enums"]["event_section"];
+          p_storage_path: string;
+        };
+        Returns: string;
+      };
       assert_not_last_admin: {
         Args: { p_event_id: string; p_user_id: string };
         Returns: undefined;
@@ -743,6 +833,7 @@ export type Database = {
         Returns: string;
       };
       delete_event: { Args: { p_event_id: string }; Returns: undefined };
+      delete_event_page_photo: { Args: { p_photo_id: string }; Returns: string };
       delete_guest_group: {
         Args: { p_delete_guests?: boolean; p_group_id: string };
         Returns: number;
@@ -767,6 +858,7 @@ export type Database = {
         Args: { p_event_id: string; p_roles: Database["public"]["Enums"]["event_role"][] };
         Returns: boolean;
       };
+      insert_default_event_sections: { Args: { p_event_id: string }; Returns: undefined };
       is_event_member: { Args: { p_event_id: string }; Returns: boolean };
       is_platform_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
       join_event: {
@@ -818,43 +910,20 @@ export type Database = {
         Returns: undefined;
       };
       require_platform_admin: { Args: Record<PropertyKey, never>; Returns: undefined };
-      save_event_contacts: {
+      save_event_page_photos: {
         Args: {
-          p_description: string;
           p_event_id: string;
-          p_eyebrow: string;
           p_items: Json;
-          p_title: string;
-        };
-        Returns: undefined;
-      };
-      save_event_locations: {
-        Args: {
-          p_description: string;
-          p_event_id: string;
-          p_eyebrow: string;
-          p_items: Json;
-          p_title: string;
-        };
-        Returns: undefined;
-      };
-      save_event_schedule: {
-        Args: {
-          p_description: string;
-          p_event_id: string;
-          p_eyebrow: string;
-          p_items: Json;
-          p_title: string;
-        };
-        Returns: undefined;
-      };
-      save_event_section_header: {
-        Args: {
-          p_description: string;
-          p_event_id: string;
-          p_eyebrow: string;
           p_section: Database["public"]["Enums"]["event_section"];
-          p_title: string;
+        };
+        Returns: undefined;
+      };
+      save_event_section: {
+        Args: {
+          p_content: Json;
+          p_event_id: string;
+          p_items?: Json;
+          p_section: Database["public"]["Enums"]["event_section"];
         };
         Returns: undefined;
       };
@@ -920,7 +989,14 @@ export type Database = {
     Enums: {
       attendance_likelihood: "UNKNOWN" | "CONFIRMED" | "LIKELY" | "UNLIKELY" | "DECLINED";
       event_role: "ADMIN" | "EDITOR" | "GUEST";
-      event_section: "gallery" | "couple" | "schedule" | "seating" | "location" | "contact";
+      event_section:
+        | "gallery"
+        | "couple"
+        | "schedule"
+        | "seating"
+        | "location"
+        | "contact"
+        | "footer";
       expense_status: "UNPAID" | "DEPOSIT_PAID" | "PAID";
       guest_age_group: "ADULT" | "CHILD" | "INFANT";
     };
@@ -1043,7 +1119,7 @@ export const Constants = {
     Enums: {
       attendance_likelihood: ["UNKNOWN", "CONFIRMED", "LIKELY", "UNLIKELY", "DECLINED"],
       event_role: ["ADMIN", "EDITOR", "GUEST"],
-      event_section: ["gallery", "couple", "schedule", "seating", "location", "contact"],
+      event_section: ["gallery", "couple", "schedule", "seating", "location", "contact", "footer"],
       expense_status: ["UNPAID", "DEPOSIT_PAID", "PAID"],
       guest_age_group: ["ADULT", "CHILD", "INFANT"],
     },

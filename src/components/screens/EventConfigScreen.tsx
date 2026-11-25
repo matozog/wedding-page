@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
 import { useEventPage } from '@/hooks/useEventPage'
 import { ROUTES } from '@/lib/routes'
+import type { ThemeKey } from '@/config/themes'
 import type { EventPreview } from '@/types/event'
 import type { EventPage } from '@/types/eventPage'
 import { OrganizerGate, type OrganizerAccess } from './OrganizerGate'
@@ -20,6 +21,7 @@ type EventConfigScreenProps = {
   currentEventId: string | null
   onOpenPage: (event: EventPreview) => void
   onEventChanged: (eventId: string, event: EventPreview | null) => void
+  onThemeSaved: (eventId: string, theme: ThemeKey) => void
 }
 
 // /events/:eventId - konfiguracja jednego wydarzenia (super admin).
@@ -31,7 +33,14 @@ export function EventConfigScreen(props: EventConfigScreenProps) {
   )
 }
 
-function EventConfigContent({ eventId, access, currentEventId, onOpenPage, onEventChanged }: EventConfigScreenProps) {
+function EventConfigContent({
+  eventId,
+  access,
+  currentEventId,
+  onOpenPage,
+  onEventChanged,
+  onThemeSaved,
+}: EventConfigScreenProps) {
   const { page, setPage, loading, error, notFound, reload } = useEventPage(eventId)
 
   const update = useCallback(
@@ -74,13 +83,16 @@ function EventConfigContent({ eventId, access, currentEventId, onOpenPage, onEve
           <SettingsCard
             id="event-theme"
             title="Wygląd"
-            description="Paleta kolorów strony wydarzenia i panelu zarządzania tego wydarzenia."
+            description="Paleta kolorów strony wydarzenia i jego panelu zarządzania. Panel organizatora używa motywu wybranego wydarzenia."
           >
             <ThemeSettings
               eventId={eventId}
               eventName={page.event.name}
               theme={page.event.theme}
-              onSaved={(theme) => update((current) => ({ ...current, event: { ...current.event, theme } }))}
+              onSaved={(theme) => {
+                update((current) => ({ ...current, event: { ...current.event, theme } }))
+                onThemeSaved(eventId, theme)
+              }}
             />
           </SettingsCard>
 
