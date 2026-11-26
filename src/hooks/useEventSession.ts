@@ -19,6 +19,7 @@ import { clearInviteParamFromUrl, readInviteTokenFromUrl } from '../lib/inviteLi
 import { fetchMyProfile, setDisplayName } from '../lib/profileApi'
 import { PENDING_EVENT_KEY, SESSION_STORAGE_KEY } from '../lib/constants'
 import { supabase } from '../lib/supabase'
+import { writeCachedTheme } from '../lib/themeCache'
 import type { EventPreview, EventSession } from '../types/event'
 import type { Profile } from '../types/profile'
 
@@ -208,6 +209,7 @@ export function useEventSession() {
         return false
       }
 
+      if (event.theme) writeCachedTheme(event.id, event.theme)
       updateStored(
         fromInvite
           ? { session: event, accessCode: null, inviteToken: credential.inviteToken }
@@ -349,6 +351,9 @@ export function useEventSession() {
           return
         }
 
+        // Ekran pseudonimu ma już motyw wydarzenia.
+        if (event.theme) writeCachedTheme(event.id, event.theme)
+
         // Ma już profil (wraca na tym urządzeniu, konto Google) - dołącza od razu.
         if (await refreshProfile()) {
           await joinWith({ accessCode })
@@ -384,6 +389,9 @@ export function useEventSession() {
           return
         }
 
+        // Ekran pseudonimu ma już motyw wydarzenia.
+        if (invite.theme) writeCachedTheme(invite.id, invite.theme)
+
         // Kto ma profil, dołącza od razu. Także gdy zapisana sesja wskazuje
         // to samo wydarzenie: mógł zostać z niego usunięty, a dla obecnego
         // członka join_event_by_invite niczego nie zmienia.
@@ -398,7 +406,7 @@ export function useEventSession() {
 
         updateStored(null)
         updatePending({
-          event: { id: invite.id, name: invite.name, startsAt: invite.startsAt },
+          event: { id: invite.id, name: invite.name, startsAt: invite.startsAt, theme: invite.theme },
           inviteToken,
           inviterName: invite.inviterName,
         })

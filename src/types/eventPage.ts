@@ -1,4 +1,4 @@
-import type { ThemeKey } from '@/config/themes'
+import type { CustomColors, ThemeKey } from '@/config/themes'
 import type { Database } from './database'
 
 export type EventSectionKey = Database['public']['Enums']['event_section']
@@ -65,6 +65,7 @@ export type EventPage = {
     name: string
     starts_at: string | null
     theme: ThemeKey
+    theme_colors: CustomColors | null
     // Goście (rola GUEST) mogą udostępniać link do wydarzenia.
     guest_sharing_enabled: boolean
   }

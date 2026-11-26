@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 
 // Kolory motywu dla canvasa (Konva nie czyta klas Tailwinda). Zmienne CSS
 // mają postać "H S% L%" - zamieniamy je na hsl(). Odświeżane po zmianie
-// motywu (atrybut data-theme na <html>).
+// motywu (atrybut data-theme i własne kolory w style na <html>).
 export type ThemeColors = {
   background: string
   foreground: string
@@ -41,7 +41,7 @@ export function useThemeColors(): ThemeColors {
 
   useEffect(() => {
     const observer = new MutationObserver(() => setColors(readColors()))
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] })
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] })
     return () => observer.disconnect()
   }, [])
 

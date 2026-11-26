@@ -1,21 +1,31 @@
-import { isThemeKey, type ThemeKey } from '../config/themes'
+import { isThemeKey, toAppTheme, type AppTheme } from '../config/themes'
 
-// Ostatni znany motyw wydarzenia - ustawiany od razu, zanim przyjdzie
-// konfiguracja z bazy (bez mignięcia kolorów domyślnych).
-const key = (eventId: string) => `wedding-page:theme:${eventId}`
+// Ostatni znany motyw wydarzenia (albo ekranu startowego) - ustawiany od
+// razu, zanim przyjdzie konfiguracja z bazy (bez mignięcia kolorów domyślnych).
+export const START_THEME_SCOPE = 'start'
 
-export const readCachedTheme = (eventId: string): ThemeKey | null => {
+const key = (scope: string) => `wedding-page:theme:${scope}`
+
+// scope - id wydarzenia albo START_THEME_SCOPE.
+export const readCachedTheme = (scope: string): AppTheme | null => {
   try {
-    const value = localStorage.getItem(key(eventId))
-    return isThemeKey(value) ? value : null
+    const value = localStorage.getItem(key(scope))
+    if (!value) return null
+    // Starszy zapis - sam klucz palety.
+    if (isThemeKey(value)) return { key: value, colors: null }
+
+    const parsed: unknown = JSON.parse(value)
+    if (typeof parsed !== 'object' || parsed === null) return null
+    const { key: themeKey, colors } = parsed as Record<string, unknown>
+    return isThemeKey(themeKey) ? toAppTheme(themeKey, colors) : null
   } catch {
     return null
   }
 }
 
-export const writeCachedTheme = (eventId: string, theme: ThemeKey) => {
+export const writeCachedTheme = (scope: string, theme: AppTheme) => {
   try {
-    localStorage.setItem(key(eventId), theme)
+    localStorage.setItem(key(scope), JSON.stringify(theme))
   } catch {
     // Storage niedostępny (np. prywatna karta) - motyw przyjdzie z bazy.
   }

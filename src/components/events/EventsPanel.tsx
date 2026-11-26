@@ -1,4 +1,4 @@
-import { Loader2, Plus, RefreshCw } from 'lucide-react'
+import { Loader2, Palette, Plus, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Button } from '@/components/ui/button'
@@ -7,6 +7,7 @@ import { useAdminEvents } from '@/hooks/useAdminEvents'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { countPl } from '@/lib/plural'
 import { eventConfigPath } from '@/lib/routes'
+import type { AppTheme } from '@/config/themes'
 import type { AdminEvent } from '@/types/adminEvent'
 import type { EventPreview } from '@/types/event'
 import { AccessCodeDialog } from './AccessCodeDialog'
@@ -14,15 +15,19 @@ import { DeleteEventDialog } from './DeleteEventDialog'
 import { EventCardList, EventTable } from './EventList'
 import { EventFormDialog } from './EventFormDialog'
 import { EventMembersDialog } from './EventMembersDialog'
+import { StartThemeDialog } from './StartThemeDialog'
 
 type EventsPanelProps = {
   currentEventId: string | null
+  // Motyw ekranu startowego (wpisywanie kodu).
+  startTheme: AppTheme
   onEnter: (event: EventPreview) => void
   // Zmiana / usunięcie wydarzenia - wybrane wydarzenie w sesji nadąża.
   onEventChanged: (eventId: string, event: EventPreview | null) => void
+  onStartThemeSaved: (theme: AppTheme) => void
 }
 
-type OpenDialog = { kind: 'create' } | { kind: 'code' | 'delete' | 'members'; event: AdminEvent } | null
+type OpenDialog = { kind: 'create' | 'startTheme' } | { kind: 'code' | 'delete' | 'members'; event: AdminEvent } | null
 
 const toPreview = (event: AdminEvent): EventPreview => ({
   id: event.id,
@@ -31,7 +36,7 @@ const toPreview = (event: AdminEvent): EventPreview => ({
 })
 
 // Wszystkie wydarzenia - tylko super admin (każde RPC sprawdza to w bazie).
-export function EventsPanel({ currentEventId, onEnter, onEventChanged }: EventsPanelProps) {
+export function EventsPanel({ currentEventId, startTheme, onEnter, onEventChanged, onStartThemeSaved }: EventsPanelProps) {
   const { events, loading, error, reload, addEvent, changeAccessCode, removeEvent } = useAdminEvents()
   const navigate = useNavigate()
   const isDesktop = useMediaQuery('(min-width: 1024px)')
@@ -75,6 +80,16 @@ export function EventsPanel({ currentEventId, onEnter, onEventChanged }: EventsP
           onClick={() => void reload()}
         >
           <RefreshCw className={loading ? 'size-4 animate-spin' : 'size-4'} />
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          aria-label="Motyw ekranu startowego"
+          title="Motyw ekranu startowego"
+          onClick={() => setDialog({ kind: 'startTheme' })}
+        >
+          <Palette className="size-4" />
         </Button>
         <Button type="button" onClick={() => setDialog({ kind: 'create' })}>
           <Plus className="size-4" aria-hidden="true" />
@@ -120,6 +135,9 @@ export function EventsPanel({ currentEventId, onEnter, onEventChanged }: EventsP
         <DeleteEventDialog event={dialog.event} onClose={close} onDelete={handleDelete} />
       )}
       {dialog?.kind === 'members' && <EventMembersDialog event={dialog.event} onClose={close} />}
+      {dialog?.kind === 'startTheme' && (
+        <StartThemeDialog theme={startTheme} onClose={close} onSaved={onStartThemeSaved} />
+      )}
     </section>
   )
 }

@@ -1,4 +1,4 @@
-import { DEFAULT_THEME, isThemeKey, type ThemeKey } from '../config/themes'
+import { toAppTheme, type AppTheme } from '../config/themes'
 import type {
   AboutFact,
   EventContact,
@@ -17,7 +17,7 @@ import { supabase } from './supabase'
 // zapis - tylko super admin (każde RPC sprawdza to w bazie).
 
 type RawEventPage = Omit<EventPage, 'sections' | 'event'> & {
-  event: Omit<EventPage['event'], 'theme'> & { theme: string }
+  event: Omit<EventPage['event'], 'theme' | 'theme_colors'> & { theme: string; theme_colors: unknown }
   sections: SectionConfig[]
 }
 
@@ -34,16 +34,22 @@ export const fetchEventPage = async (eventId: string): Promise<EventPage | null>
   }
 
   const raw = data as unknown as RawEventPage
+  const theme = toAppTheme(raw.event.theme, raw.event.theme_colors)
 
   return {
     ...raw,
-    event: { ...raw.event, theme: isThemeKey(raw.event.theme) ? raw.event.theme : DEFAULT_THEME },
+    event: { ...raw.event, theme: theme.key, theme_colors: theme.colors },
     sections: Object.fromEntries(raw.sections.map((section) => [section.section, section])) as EventPage['sections'],
   }
 }
 
-export const setEventTheme = async (eventId: string, theme: ThemeKey) => {
-  const { error } = await supabase.rpc('set_event_theme', { p_event_id: eventId, p_theme: theme })
+// Paleta i własne kolory (null - sama paleta) w jednym zapisie.
+export const setEventTheme = async (eventId: string, theme: AppTheme) => {
+  const { error } = await supabase.rpc('set_event_theme', {
+    p_event_id: eventId,
+    p_theme: theme.key,
+    p_colors: theme.colors ?? undefined,
+  })
 
   if (error) {
     throw error

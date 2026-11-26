@@ -4,13 +4,15 @@ import { Link } from 'react-router'
 import { GeneralSettings } from '@/components/eventConfig/GeneralSettings'
 import { SectionsSettings } from '@/components/eventConfig/SectionsSettings'
 import { SettingsCard } from '@/components/eventConfig/fields'
+import { EventThemePreview } from '@/components/eventConfig/ThemePreviews'
 import { ThemeSettings } from '@/components/eventConfig/ThemeSettings'
 import { ManagementLayout } from '@/components/layout/ManagementLayout'
 import { Button } from '@/components/ui/button'
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
 import { useEventPage } from '@/hooks/useEventPage'
+import { setEventTheme } from '@/lib/eventPageApi'
 import { ROUTES } from '@/lib/routes'
-import type { ThemeKey } from '@/config/themes'
+import type { AppTheme } from '@/config/themes'
 import type { EventPreview } from '@/types/event'
 import type { EventPage } from '@/types/eventPage'
 import { OrganizerGate, type OrganizerAccess } from './OrganizerGate'
@@ -21,7 +23,7 @@ type EventConfigScreenProps = {
   currentEventId: string | null
   onOpenPage: (event: EventPreview) => void
   onEventChanged: (eventId: string, event: EventPreview | null) => void
-  onThemeSaved: (eventId: string, theme: ThemeKey) => void
+  onThemeSaved: (eventId: string, theme: AppTheme) => void
 }
 
 // /events/:eventId - konfiguracja jednego wydarzenia (super admin).
@@ -86,14 +88,18 @@ function EventConfigContent({
           <SettingsCard
             id="event-theme"
             title="Wygląd"
-            description="Paleta kolorów strony wydarzenia i jego panelu zarządzania. Panel organizatora używa motywu wybranego wydarzenia."
+            description="Kolory strony wydarzenia i jego panelu zarządzania: zestaw i opcjonalnie własne kolory. Panel organizatora używa motywu wybranego wydarzenia."
           >
             <ThemeSettings
-              eventId={eventId}
-              eventName={page.event.name}
-              theme={page.event.theme}
+              key={page.event.id}
+              theme={{ key: page.event.theme, colors: page.event.theme_colors }}
+              preview={<EventThemePreview eventName={page.event.name} />}
+              onSave={(theme) => setEventTheme(eventId, theme)}
               onSaved={(theme) => {
-                update((current) => ({ ...current, event: { ...current.event, theme } }))
+                update((current) => ({
+                  ...current,
+                  event: { ...current.event, theme: theme.key, theme_colors: theme.colors },
+                }))
                 onThemeSaved(eventId, theme)
               }}
             />

@@ -1,3 +1,4 @@
+import { toAppTheme } from '../config/themes'
 import type { EventPreview, EventSession } from '../types/event'
 import type { EventRole } from '../types/role'
 import { supabase } from './supabase'
@@ -66,6 +67,7 @@ export const checkEventCode = async (code: string): Promise<EventPreview | null>
     id: event.event_id,
     name: event.event_name,
     startsAt: event.starts_at,
+    theme: toAppTheme(event.theme, event.theme_colors),
   }
 }
 
@@ -99,6 +101,7 @@ export const joinEvent = async (
     name: event.event_name,
     startsAt: event.starts_at,
     role: event.role,
+    theme: toAppTheme(event.theme, event.theme_colors),
   }
 }
 
@@ -127,6 +130,7 @@ export const checkInvite = async (token: string): Promise<InvitePreview | null> 
     id: invite.event_id,
     name: invite.event_name,
     startsAt: invite.starts_at,
+    theme: toAppTheme(invite.theme, invite.theme_colors),
     inviterName: invite.inviter_name,
   }
 }
@@ -159,6 +163,7 @@ export const joinEventByInvite = async (
     name: event.event_name,
     startsAt: event.starts_at,
     role: event.role,
+    theme: toAppTheme(event.theme, event.theme_colors),
   }
 }
 

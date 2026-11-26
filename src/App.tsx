@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef } from 'react'
 import { Navigate, Route, Routes, useMatch, useNavigate } from 'react-router'
 import { CalendarCog, Settings } from 'lucide-react'
 import type { SectionNavLink } from '@/components/layout/SectionNav'
@@ -11,16 +11,18 @@ import { GuestsManagementScreen } from '@/components/screens/GuestsManagementScr
 import { ManagementScreen } from '@/components/screens/ManagementScreen'
 import { NicknameScreen } from '@/components/screens/NicknameScreen'
 import type { OrganizerAccess } from '@/components/screens/OrganizerGate'
+import { useDocumentTheme } from '@/hooks/useDocumentTheme'
 import { useEventPage } from '@/hooks/useEventPage'
 import { useEventSession } from '@/hooks/useEventSession'
 import { usePhotoUpload } from '@/hooks/usePhotoUpload'
 import { usePhotos } from '@/hooks/usePhotos'
+import { useStartTheme } from '@/hooks/useStartTheme'
 import { getErrorCode } from '@/lib/eventApi'
 import { fetchMyInviteUrl } from '@/lib/inviteLink'
 import { deletePhoto } from '@/lib/photosApi'
 import { ROUTES } from '@/lib/routes'
 import { readCachedTheme, writeCachedTheme } from '@/lib/themeCache'
-import type { ThemeKey } from '@/config/themes'
+import { themeSignature, type AppTheme } from '@/config/themes'
 import { canEditGuests, canManageAllPhotos, canManageEvent, canShareEvent, canViewManagement } from '@/types/role'
 import type { EventPreview } from '@/types/event'
 import type { Photo } from '@/types/photo'
@@ -94,27 +96,27 @@ function App() {
   }, [isOrganizerRoute, reloadPage])
 
   // Motyw wybranego wydarzenia na wszystkich stronach (także w zarządzaniu
-  // i w panelu organizatora). Do czasu wczytania konfiguracji - ostatni
-  // zapamiętany motyw tego wydarzenia (bez mignięcia kolorów domyślnych).
-  // Ekrany wejścia (bez wybranego wydarzenia) - motyw domyślny.
+  // i w panelu organizatora), a po sprawdzeniu kodu już na ekranie pseudonimu.
+  // Kolejność: konfiguracja strony z bazy, ostatni zapamiętany motyw (zapisany
+  // też przy sprawdzeniu kodu), motyw z check_event_code / join_event.
+  // Bez wybranego wydarzenia - motyw ekranu startowego.
+  const { theme: startTheme, updateTheme: updateStartTheme } = useStartTheme()
   const sessionId = session?.id ?? null
-  const pageTheme = sessionId && page?.event.id === sessionId ? page.event.theme : null
-  const cachedTheme = useMemo(() => (sessionId ? readCachedTheme(sessionId) : null), [sessionId])
-  const theme = pageTheme ?? cachedTheme
+  const themeEvent = session ?? pendingEvent
+  const themeEventId = themeEvent?.id ?? null
+  const pageEvent = sessionId && page?.event.id === sessionId ? page.event : null
+  const pageTheme: AppTheme | null = pageEvent ? { key: pageEvent.theme, colors: pageEvent.theme_colors } : null
+  const pageThemeSignature = themeSignature(pageTheme)
+  const cachedTheme = useMemo(() => (themeEventId ? readCachedTheme(themeEventId) : null), [themeEventId])
+  const theme = themeEventId ? (pageTheme ?? cachedTheme ?? themeEvent?.theme ?? startTheme) : startTheme
 
   useEffect(() => {
     if (sessionId && pageTheme) writeCachedTheme(sessionId, pageTheme)
-  }, [sessionId, pageTheme])
+    // pageThemeSignature opisuje pageTheme w całości
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, pageThemeSignature])
 
-  // useLayoutEffect - motyw jest ustawiony przed narysowaniem strony.
-  useLayoutEffect(() => {
-    const root = document.documentElement
-    if (theme) {
-      root.dataset.theme = theme
-    } else {
-      delete root.dataset.theme
-    }
-  }, [theme])
+  useDocumentTheme(theme)
 
   // Tytuł karty przeglądarki - nazwa wybranego wydarzenia.
   const sessionName = session?.name ?? null
@@ -125,11 +127,11 @@ function App() {
   // Zmiana motywu na stronie konfiguracji - od razu widoczna, gdy dotyczy
   // wybranego wydarzenia.
   const handleThemeSaved = useCallback(
-    (savedEventId: string, savedTheme: ThemeKey) => {
+    (savedEventId: string, savedTheme: AppTheme) => {
       writeCachedTheme(savedEventId, savedTheme)
       setPage((current) =>
         current && current.event.id === savedEventId
-          ? { ...current, event: { ...current.event, theme: savedTheme } }
+          ? { ...current, event: { ...current.event, theme: savedTheme.key, theme_colors: savedTheme.colors } }
           : current
       )
     },
@@ -247,8 +249,10 @@ function App() {
       <EventsManagementScreen
         access={organizerAccess}
         currentEventId={eventId}
+        startTheme={startTheme}
         onEnter={handleEnterEvent}
         onEventChanged={syncEventChange}
+        onStartThemeSaved={updateStartTheme}
       />
     )
   }

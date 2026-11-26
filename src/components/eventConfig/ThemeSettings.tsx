@@ -1,26 +1,62 @@
-import { Check, Loader2 } from 'lucide-react'
-import { useEffect, useId, useRef, useState } from 'react'
+import { Check, RotateCcw, TriangleAlert } from 'lucide-react'
+import { useId, useMemo, useRef, type ReactNode } from 'react'
+import { Controller, useForm } from 'react-hook-form'
 import { describeSaveError } from '@/components/events/eventFormat'
 import { Button } from '@/components/ui/button'
-import { ErrorMessage } from '@/components/ui/ErrorMessage'
-import { THEMES, type ThemeKey } from '@/config/themes'
-import { setEventTheme } from '@/lib/eventPageApi'
+import {
+  CUSTOM_COLORS,
+  THEMES,
+  parseCustomColors,
+  type AppTheme,
+  type CustomColorKey,
+  type ThemeKey,
+} from '@/config/themes'
+import { MIN_CONTRAST, findContrastIssues, isPaletteReady, readPaletteColors, themeStyle } from '@/lib/themeColors'
 import { cn } from '@/lib/utils'
+import { FormFooter } from './fields'
+import { useSavedFlag } from './useSavedFlag'
 
 type ThemeSettingsProps = {
-  eventId: string
-  eventName: string
-  theme: ThemeKey
-  onSaved: (theme: ThemeKey) => void
+  theme: AppTheme
+  // Treść podglądu (np. EventThemePreview) - w kolorach wybranego motywu.
+  preview: ReactNode
+  onSave: (theme: AppTheme) => Promise<void>
+  onSaved: (theme: AppTheme) => void
 }
 
-// Zapis po chwili bez zmian - przejście strzałkami przez listę to jeden zapis.
-const SAVE_DELAY_MS = 600
+// '' - kolor z palety.
+type ThemeFormValues = {
+  key: ThemeKey
+  colors: Record<CustomColorKey, string>
+}
 
 const GROUPS = [
   { tone: 'light', label: 'Jasne' },
   { tone: 'dark', label: 'Ciemne' },
 ] as const
+
+const NO_COLORS = Object.fromEntries(CUSTOM_COLORS.map(({ key }) => [key, ''])) as Record<CustomColorKey, string>
+
+const toFormValues = (theme: AppTheme): ThemeFormValues => ({
+  key: theme.key,
+  colors: { ...NO_COLORS, ...theme.colors },
+})
+
+const toTheme = (values: ThemeFormValues): AppTheme => ({
+  key: values.key,
+  colors: parseCustomColors(values.colors),
+})
+
+const formatRatio = (ratio: number) => ratio.toFixed(1).replace('.', ',')
+
+// Komunikat dla czytnika ekranu - zmienia się tylko z liczbą problemów, więc
+// przeciąganie suwaka koloru nie powoduje ciągłych ogłoszeń.
+const describeIssueCount = (count: number) =>
+  count === 0
+    ? ''
+    : count === 1
+      ? 'Słaby kontrast w 1 miejscu.'
+      : `Słaby kontrast w ${count} miejscach.`
 
 // Próbki kolorów - fragment z data-theme dostaje zmienne CSS danej palety.
 function ThemeSwatches({ theme }: { theme: ThemeKey }) {
@@ -33,88 +69,64 @@ function ThemeSwatches({ theme }: { theme: ThemeKey }) {
   )
 }
 
-// Wybór palety i podgląd wybranej. Radio nie jest wyłączane w trakcie
-// zapisu, więc fokus klawiatury zostaje na miejscu.
-export function ThemeSettings({ eventId, eventName, theme, onSaved }: ThemeSettingsProps) {
+// Paleta jako punkt wyjścia i do pięciu własnych kolorów (pozostałe są
+// wyliczane). Podgląd na żywo, zapis przyciskiem.
+export function ThemeSettings({ theme, preview, onSave, onSaved }: ThemeSettingsProps) {
   const id = useId()
-  const [selected, setSelected] = useState<ThemeKey>(theme)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const timerRef = useRef<number | null>(null)
-  const pendingRef = useRef<ThemeKey | null>(null)
-  // Ostatni potwierdzony przez bazę i ostatni wysłany motyw. Zapisy idą po
-  // kolei (queueRef), więc ostatni wybór zawsze trafia do bazy jako ostatni.
-  const savedRef = useRef(theme)
-  const requestedRef = useRef(theme)
-  const queueRef = useRef<Promise<void>>(Promise.resolve())
-  const onSavedRef = useRef(onSaved)
+  const busyRef = useRef(false)
+  const {
+    register,
+    control,
+    handleSubmit,
+    reset,
+    setError,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<ThemeFormValues>({ defaultValues: toFormValues(theme) })
+  const { saved, markSaved } = useSavedFlag(watch)
 
-  useEffect(() => {
-    onSavedRef.current = onSaved
-  }, [onSaved])
+  const values = watch()
+  const current = toTheme(values)
+  // paletteReady - przelicz, gdy arkusz CSS wczyta się po pierwszym odczycie.
+  const paletteReady = isPaletteReady(values.key)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const paletteColors = useMemo(() => readPaletteColors(values.key), [values.key, paletteReady])
+  const issues = findContrastIssues(current)
+  const hasCustomColors = current.colors !== null
 
-  // Wybór czekający na zapis nie przepada przy wyjściu ze strony.
-  useEffect(
-    () => () => {
-      const pending = pendingRef.current
-      if (timerRef.current !== null) window.clearTimeout(timerRef.current)
-      if (pending && pending !== requestedRef.current) {
-        requestedRef.current = pending
-        queueRef.current = queueRef.current
-          .then(() => setEventTheme(eventId, pending))
-          .then(() => onSavedRef.current(pending))
-          .catch((err) => console.error('Theme save error:', err))
-      }
-    },
-    [eventId]
-  )
+  const onSubmit = handleSubmit(async (formValues) => {
+    if (busyRef.current) return
+    busyRef.current = true
 
-  const save = (key: ThemeKey) => {
-    if (key === requestedRef.current) return
-    requestedRef.current = key
-    setSaving(true)
-    setError(null)
+    const next = toTheme(formValues)
 
-    queueRef.current = queueRef.current.then(async () => {
-      const isLatest = () => requestedRef.current === key
-      try {
-        await setEventTheme(eventId, key)
-        savedRef.current = key
-        if (isLatest()) onSavedRef.current(key)
-      } catch (err) {
-        console.error(err)
-        if (isLatest()) {
-          setError(describeSaveError(err, 'Nie udało się zmienić motywu.'))
-          requestedRef.current = savedRef.current
-          setSelected(savedRef.current)
-          onSavedRef.current(savedRef.current)
-        }
-      } finally {
-        if (isLatest()) setSaving(false)
-      }
-    })
-  }
+    try {
+      await onSave(next)
+      onSaved(next)
+      reset(toFormValues(next))
+      markSaved()
+    } catch (err) {
+      console.error(err)
+      setError('root', { message: describeSaveError(err, 'Nie udało się zapisać motywu.') })
+    } finally {
+      busyRef.current = false
+    }
+  })
 
-  const choose = (key: ThemeKey) => {
-    setSelected(key)
-    pendingRef.current = key
-    if (timerRef.current !== null) window.clearTimeout(timerRef.current)
-    timerRef.current = window.setTimeout(() => {
-      timerRef.current = null
-      pendingRef.current = null
-      save(key)
-    }, SAVE_DELAY_MS)
+  const resetColors = () => {
+    for (const { key } of CUSTOM_COLORS) setValue(`colors.${key}`, '', { shouldDirty: true })
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
-      <div className="flex flex-col gap-4">
+    <form noValidate onSubmit={(e) => void onSubmit(e)} className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+      <div className="flex min-w-0 flex-col gap-5">
         {GROUPS.map((group) => (
           <fieldset key={group.tone}>
-            <legend className="mb-2 text-sm font-medium text-foreground">{group.label}</legend>
+            <legend className="mb-2 text-sm font-medium text-foreground">Zestawy {group.label.toLowerCase()}</legend>
             <div className="grid gap-2 sm:grid-cols-2">
               {THEMES.filter((option) => option.tone === group.tone).map((option) => {
-                const checked = option.key === selected
+                const checked = option.key === values.key
 
                 return (
                   <label
@@ -125,14 +137,7 @@ export function ThemeSettings({ eventId, eventName, theme, onSaved }: ThemeSetti
                       checked && 'border-primary bg-primary/5'
                     )}
                   >
-                    <input
-                      type="radio"
-                      name={`${id}-theme`}
-                      value={option.key}
-                      checked={checked}
-                      onChange={() => choose(option.key)}
-                      className="sr-only"
-                    />
+                    <input type="radio" value={option.key} className="sr-only" {...register('key')} />
                     <ThemeSwatches theme={option.key} />
                     <span className="flex-1 text-sm font-medium text-foreground">{option.label}</span>
                     {checked && <Check className="size-4 text-primary" aria-hidden="true" />}
@@ -143,35 +148,96 @@ export function ThemeSettings({ eventId, eventName, theme, onSaved }: ThemeSetti
           </fieldset>
         ))}
 
-        <p className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
-          {saving && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-          {saving ? 'Zapisywanie motywu…' : ''}
-        </p>
-        {error && (
-          <div role="alert">
-            <ErrorMessage message={error} />
+        <fieldset>
+          <legend className="mb-1 text-sm font-medium text-foreground">Własne kolory</legend>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Nadpisują kolory zestawu. Karty, obramowania i kolor tekstu na przyciskach są wyliczane automatycznie.
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {CUSTOM_COLORS.map(({ key, label }) => (
+              <Controller
+                key={key}
+                control={control}
+                name={`colors.${key}`}
+                render={({ field }) => {
+                  const inputId = `${id}-${key}`
+                  const color = field.value || paletteColors[key]
+
+                  return (
+                    <div className="flex items-center gap-3 rounded-lg border bg-background p-2">
+                      <input
+                        id={inputId}
+                        ref={field.ref}
+                        type="color"
+                        value={color}
+                        onChange={(e) => field.onChange(e.target.value.toLowerCase())}
+                        onBlur={field.onBlur}
+                        className="h-9 w-11 shrink-0 cursor-pointer rounded-md border border-input bg-transparent p-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      />
+                      <label htmlFor={inputId} className="min-w-0 flex-1 cursor-pointer">
+                        <span className="block text-sm font-medium text-foreground">{label}</span>
+                        <span className="block truncate font-mono text-xs text-muted-foreground">
+                          {color}
+                          {field.value ? '' : ' · z zestawu'}
+                        </span>
+                      </label>
+                      {field.value && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="size-9 shrink-0"
+                          aria-label={`Przywróć kolor z zestawu: ${label}`}
+                          title="Przywróć kolor z zestawu"
+                          onClick={() => field.onChange('')}
+                        >
+                          <RotateCcw className="size-4" />
+                        </Button>
+                      )}
+                    </div>
+                  )
+                }}
+              />
+            ))}
           </div>
-        )}
+          <Button type="button" variant="outline" className="mt-3" disabled={!hasCustomColors} onClick={resetColors}>
+            <RotateCcw className="size-4" aria-hidden="true" />
+            Przywróć domyślne kolory
+          </Button>
+        </fieldset>
+
+        <p role="status" className="sr-only">
+          {describeIssueCount(issues.length)}
+        </p>
+        <div>
+          {issues.length > 0 && (
+            <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-foreground">
+              <p className="flex items-center gap-2 font-medium">
+                <TriangleAlert className="size-4 shrink-0 text-destructive" aria-hidden="true" />
+                Słaby kontrast - tekst może być trudny do odczytania
+              </p>
+              <ul className="mt-1 list-disc pl-10 text-muted-foreground">
+                {issues.map((issue) => (
+                  <li key={issue.label}>
+                    {issue.label}: {formatRatio(issue.ratio)}:1 (zalecane co najmniej {formatRatio(MIN_CONTRAST)}:1)
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        <FormFooter error={errors.root?.message} saved={saved} submitting={isSubmitting} label="Zapisz motyw" />
       </div>
 
       <div
-        data-theme={selected}
-        className="h-fit rounded-xl border bg-background p-4 text-foreground shadow-sm"
+        data-theme={current.key}
+        style={themeStyle(current)}
+        className="h-fit rounded-xl border bg-background p-4 text-foreground shadow-sm lg:sticky lg:top-4"
         aria-hidden="true"
       >
-        <p className="font-serif text-xs uppercase tracking-[0.3em] text-primary">Podgląd</p>
-        <p className="mt-1 font-serif text-2xl">{eventName}</p>
-        <div className="mt-3 rounded-lg border bg-card p-3">
-          <p className="text-sm font-medium">Plan wydarzenia</p>
-          <p className="text-xs text-muted-foreground">15:00 · Powitanie gości</p>
-        </div>
-        <div className="mt-3 flex gap-2">
-          <Button type="button" size="sm" tabIndex={-1}>
-            Dodaj zdjęcia
-          </Button>
-          <span className="rounded-md bg-secondary px-2 py-1 text-xs text-secondary-foreground">Galeria</span>
-        </div>
+        {preview}
       </div>
-    </div>
+    </form>
   )
 }

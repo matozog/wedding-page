@@ -23,6 +23,28 @@ export type Database = {
   };
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          id: boolean;
+          start_theme: string;
+          start_theme_colors: Json | null;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          id?: boolean;
+          start_theme?: string;
+          start_theme_colors?: Json | null;
+          updated_at?: string;
+        };
+        Update: {
+          id?: boolean;
+          start_theme?: string;
+          start_theme_colors?: Json | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       budget_categories: {
         Row: {
           created_at: string;
@@ -384,6 +406,7 @@ export type Database = {
           name: string;
           starts_at: string | null;
           theme: string;
+          theme_colors: Json | null;
         };
         ComputedFields: never;
         Insert: {
@@ -395,6 +418,7 @@ export type Database = {
           name: string;
           starts_at?: string | null;
           theme?: string;
+          theme_colors?: Json | null;
         };
         Update: {
           access_code_hash?: string;
@@ -405,6 +429,7 @@ export type Database = {
           name?: string;
           starts_at?: string | null;
           theme?: string;
+          theme_colors?: Json | null;
         };
         Relationships: [
           {
@@ -977,6 +1002,8 @@ export type Database = {
           event_id: string;
           event_name: string;
           starts_at: string;
+          theme: string;
+          theme_colors: Json;
         }[];
       };
       check_invite: {
@@ -986,10 +1013,13 @@ export type Database = {
           event_name: string;
           inviter_name: string;
           starts_at: string;
+          theme: string;
+          theme_colors: Json;
         }[];
       };
       clean_display_name: { Args: { p_value: string }; Returns: string };
       clean_text: { Args: { p_value: string }; Returns: string };
+      clean_theme_colors: { Args: { p_colors: Json }; Returns: Json };
       cleanup_abandoned_anonymous_users: { Args: Record<PropertyKey, never>; Returns: number };
       create_event: {
         Args: { p_access_code: string; p_name: string; p_starts_at?: string };
@@ -1022,6 +1052,8 @@ export type Database = {
       insert_default_event_sections: { Args: { p_event_id: string }; Returns: undefined };
       is_event_member: { Args: { p_event_id: string }; Returns: boolean };
       is_platform_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
+      is_theme_colors: { Args: { p_colors: Json }; Returns: boolean };
+      is_theme_key: { Args: { p_theme: string }; Returns: boolean };
       join_event: {
         Args: { p_access_code: string; p_display_name?: string };
         Returns: {
@@ -1029,6 +1061,8 @@ export type Database = {
           event_name: string;
           role: Database["public"]["Enums"]["event_role"];
           starts_at: string;
+          theme: string;
+          theme_colors: Json;
         }[];
       };
       join_event_by_invite: {
@@ -1038,6 +1072,8 @@ export type Database = {
           event_name: string;
           role: Database["public"]["Enums"]["event_role"];
           starts_at: string;
+          theme: string;
+          theme_colors: Json;
         }[];
       };
       list_event_members_admin: {
@@ -1126,7 +1162,10 @@ export type Database = {
         };
         Returns: undefined;
       };
-      set_event_theme: { Args: { p_event_id: string; p_theme: string }; Returns: undefined };
+      set_event_theme: {
+        Args: { p_colors?: Json; p_event_id: string; p_theme: string };
+        Returns: undefined;
+      };
       set_member_role: {
         Args: {
           p_event_id: string;
@@ -1139,6 +1178,7 @@ export type Database = {
         Args: { p_event_id: string; p_published: boolean };
         Returns: undefined;
       };
+      set_start_theme: { Args: { p_colors?: Json; p_theme: string }; Returns: undefined };
       shares_event_with: { Args: { p_user_id: string }; Returns: boolean };
       storage_path_event_id: { Args: { p_name: string }; Returns: string };
       storage_path_owner: { Args: { p_name: string }; Returns: string };
