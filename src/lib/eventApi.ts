@@ -102,6 +102,66 @@ export const joinEvent = async (
   }
 }
 
+// Zaproszenie z linku, przed dołączeniem. inviterName - pseudonim osoby,
+// która udostępniła link (null, gdy nie ma pseudonimu).
+export type InvitePreview = EventPreview & { inviterName: string | null }
+
+// Sprawdza link zaproszenia bez dołączania. null dla nieważnego linku
+// (nieznany, cofnięty albo autor nie może już udostępniać).
+export const checkInvite = async (token: string): Promise<InvitePreview | null> => {
+  await ensureAuthSession()
+
+  const { data, error } = await supabase.rpc('check_invite', { p_token: token })
+
+  if (error) {
+    throw error
+  }
+
+  const invite = data?.[0]
+
+  if (!invite) {
+    return null
+  }
+
+  return {
+    id: invite.event_id,
+    name: invite.event_name,
+    startsAt: invite.starts_at,
+    inviterName: invite.inviter_name,
+  }
+}
+
+// Dołącza przez link zaproszenia - jak joinEvent(), baza zapisuje, kto
+// zaprosił. null dla nieważnego linku.
+export const joinEventByInvite = async (
+  token: string,
+  displayName?: string
+): Promise<EventSession | null> => {
+  await ensureAuthSession()
+
+  const { data, error } = await supabase.rpc('join_event_by_invite', {
+    p_token: token,
+    p_display_name: displayName,
+  })
+
+  if (error) {
+    throw error
+  }
+
+  const event = data?.[0]
+
+  if (!event) {
+    return null
+  }
+
+  return {
+    id: event.event_id,
+    name: event.event_name,
+    startsAt: event.starts_at,
+    role: event.role,
+  }
+}
+
 // Aktualna rola zalogowanego użytkownika w wydarzeniu, null gdy nie jest
 // (już) jego członkiem.
 export const fetchMyEventRole = async (eventId: string): Promise<EventRole | null> => {

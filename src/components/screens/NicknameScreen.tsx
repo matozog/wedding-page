@@ -1,4 +1,5 @@
 import type { FormEvent } from 'react'
+import { Mail } from 'lucide-react'
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,6 +18,10 @@ type NicknameScreenProps = {
   onGoogleLogin: () => void
   // Powrót do wpisania kodu - tylko gdy kod nie został jeszcze sprawdzony.
   onChangeCode?: () => void
+  // Wejście z linku zaproszenia i pseudonim osoby, która go udostępniła
+  // (null - zapraszający nie ma pseudonimu).
+  fromInvite?: boolean
+  inviterName?: string | null
 }
 
 export function NicknameScreen({
@@ -28,6 +33,8 @@ export function NicknameScreen({
   onSubmit,
   onGoogleLogin,
   onChangeCode,
+  fromInvite = false,
+  inviterName = null,
 }: NicknameScreenProps) {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -43,6 +50,19 @@ export function NicknameScreen({
       title={eventName}
       subtitle="Jak mamy Cię podpisać przy zdjęciach?"
     >
+      {fromInvite && (
+        <p className="mb-5 flex items-start gap-2 rounded-lg bg-secondary px-3 py-2.5 text-sm text-foreground">
+          <Mail className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+          {inviterName ? (
+            <span>
+              Zaprasza Cię <span className="font-medium">{inviterName}</span>.
+            </span>
+          ) : (
+            <span>Masz zaproszenie na to wydarzenie.</span>
+          )}
+        </p>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-2">
           <Label htmlFor="nickname">Twój pseudonim</Label>
@@ -90,7 +110,7 @@ export function NicknameScreen({
           onClick={onChangeCode}
           disabled={submitting}
         >
-          Zmień kod dostępu
+          {fromInvite ? 'Mam kod dostępu' : 'Zmień kod dostępu'}
         </Button>
       )}
     </OnboardingLayout>

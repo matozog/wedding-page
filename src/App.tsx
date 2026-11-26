@@ -15,11 +15,13 @@ import { useEventPage } from '@/hooks/useEventPage'
 import { useEventSession } from '@/hooks/useEventSession'
 import { usePhotoUpload } from '@/hooks/usePhotoUpload'
 import { usePhotos } from '@/hooks/usePhotos'
+import { getErrorCode } from '@/lib/eventApi'
+import { fetchMyInviteUrl } from '@/lib/inviteLink'
 import { deletePhoto } from '@/lib/photosApi'
 import { ROUTES } from '@/lib/routes'
 import { readCachedTheme, writeCachedTheme } from '@/lib/themeCache'
 import type { ThemeKey } from '@/config/themes'
-import { canEditGuests, canManageAllPhotos, canManageEvent, canViewManagement } from '@/types/role'
+import { canEditGuests, canManageAllPhotos, canManageEvent, canShareEvent, canViewManagement } from '@/types/role'
 import type { EventPreview } from '@/types/event'
 import type { Photo } from '@/types/photo'
 
@@ -34,6 +36,11 @@ const MANAGEMENT_NAV_LINK: SectionNavLink = { to: ROUTES.management, label: 'Zar
 // Tylko super admin - panel wszystkich wydarzeń.
 const EVENTS_NAV_LINK: SectionNavLink = { to: ROUTES.events, label: 'Wydarzenia', icon: CalendarCog }
 
+const describeShareError = (err: unknown) =>
+  getErrorCode(err) === 'PT403'
+    ? 'Organizator wyłączył udostępnianie wydarzenia przez gości.'
+    : 'Nie udało się przygotować linku.'
+
 function App() {
   const {
     code,
@@ -42,7 +49,10 @@ function App() {
     setNickname,
     session,
     pendingEvent,
+    pendingInviterName,
+    pendingFromInvite,
     initializing,
+    resolvingInvite,
     submitting,
     userId,
     hasNickname,
@@ -193,6 +203,15 @@ function App() {
     return links.length > 0 ? links : undefined
   }, [canOpenManagement, isSuperAdmin])
 
+  // Super admin jest traktowany jak ADMIN (rola w sesji), więc też może.
+  // Do wczytania konfiguracji strony gość nie widzi opcji udostępniania.
+  const currentPage = page?.event.id === eventId ? page : null
+  const canShare = canShareEvent(role, currentPage?.event.guest_sharing_enabled ?? false)
+  const getShareLink = useCallback(async () => {
+    if (!eventId) throw new Error('Brak wybranego wydarzenia.')
+    return fetchMyInviteUrl(eventId)
+  }, [eventId])
+
   const handleEnterEvent = useCallback(
     (event: EventPreview) => {
       enterEvent(event)
@@ -249,8 +268,9 @@ function App() {
   }
 
   // Zapisane wydarzenie czeka na profil z bazy, a kod sprzed logowania Google
-  // na dołączenie - bez tego mignąłby ekran pseudonimu.
-  if (initializing && (session || pendingEvent)) {
+  // na dołączenie - bez tego mignąłby ekran pseudonimu. Link zaproszenia
+  // jest jeszcze sprawdzany - bez mignięcia ekranu kodu.
+  if (resolvingInvite || (initializing && (session || pendingEvent))) {
     return null
   }
 
@@ -276,6 +296,8 @@ function App() {
               uploadProgress={uploadProgress}
               error={error}
               navLinks={navLinks}
+              getShareLink={canShare ? getShareLink : undefined}
+              describeShareError={describeShareError}
               canDeletePhoto={canDeletePhoto}
               getPhotoUrl={getPhotoUrl}
               onUpload={uploadPhotos}
@@ -359,6 +381,8 @@ function App() {
         onSubmit={handleSaveNickname}
         onGoogleLogin={loginWithGoogle}
         onChangeCode={session ? undefined : cancelPendingEvent}
+        fromInvite={!session && pendingFromInvite}
+        inviterName={pendingInviterName}
       />
     )
   }

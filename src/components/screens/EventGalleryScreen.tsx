@@ -1,13 +1,14 @@
-import { Loader2 } from 'lucide-react'
-import { lazy, Suspense, useMemo } from 'react'
+import { Loader2, Share2 } from 'lucide-react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import { AboutCoupleSection } from '@/components/sections/AboutCoupleSection'
 import { ContactSection } from '@/components/sections/ContactSection'
 import { LocationMapSection } from '@/components/sections/LocationMapSection'
 import { WeddingScheduleSection } from '@/components/sections/WeddingScheduleSection'
 import { SiteFooter } from '@/components/layout/SiteFooter'
-import type { SectionNavLink } from '@/components/layout/SectionNav'
+import type { SectionNavAction, SectionNavLink } from '@/components/layout/SectionNav'
 import { SiteHeader } from '@/components/layout/SiteHeader'
 import { PhotoGallery } from '@/components/photos/PhotoGallery'
+import { ShareEventDialog } from '@/components/share/ShareEventDialog'
 import { Button } from '@/components/ui/button'
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
 import { SECTION_IDS, SECTION_NAV_ITEMS } from '@/config/navigation'
@@ -36,6 +37,9 @@ type EventGalleryScreenProps = {
   uploadProgress: number
   error: string | null
   navLinks?: readonly SectionNavLink[]
+  // Link do udostępnienia wydarzenia; brak - użytkownik nie może udostępniać.
+  getShareLink?: () => Promise<string>
+  describeShareError?: (err: unknown) => string
   canDeletePhoto: (photo: Photo) => boolean
   getPhotoUrl: (path: string) => Promise<string | null>
   onUpload: (files: File[]) => void
@@ -78,6 +82,8 @@ export function EventGalleryScreen({
   uploadProgress,
   error,
   navLinks,
+  getShareLink,
+  describeShareError,
   canDeletePhoto,
   getPhotoUrl,
   onUpload,
@@ -99,6 +105,14 @@ export function EventGalleryScreen({
       })),
     [page, visible]
   )
+  const [shareOpen, setShareOpen] = useState(false)
+  const navActions = useMemo<SectionNavAction[] | undefined>(
+    () =>
+      getShareLink
+        ? [{ key: 'share', label: 'Udostępnij wydarzenie', icon: Share2, onSelect: () => setShareOpen(true) }]
+        : undefined,
+    [getShareLink]
+  )
 
   return (
     <div className="min-h-svh bg-background">
@@ -110,6 +124,7 @@ export function EventGalleryScreen({
         navItems={navItems}
         canUpload={visible.has('gallery')}
         navLinks={navLinks}
+        navActions={navActions}
         onUpload={onUpload}
         onLogout={onLogout}
       />
@@ -180,6 +195,17 @@ export function EventGalleryScreen({
       )}
 
       {visible.has('footer') && <SiteFooter eventName={eventName} message={page?.sections.footer.content_body ?? null} />}
+
+      {getShareLink && (
+        <ShareEventDialog
+          key={page?.event.id}
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+          eventName={eventName}
+          getLink={getShareLink}
+          describeError={describeShareError}
+        />
+      )}
 
       {error && (
         <div className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2">

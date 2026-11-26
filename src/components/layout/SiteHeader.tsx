@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import {
   SectionNavBar,
   SectionNavMenu,
+  type SectionNavAction,
   type SectionNavLink,
 } from '@/components/layout/SectionNav'
 import { Button } from '@/components/ui/button'
@@ -21,6 +22,8 @@ type SiteHeaderProps = {
   // Przycisk dodawania zdjęć - tylko gdy galeria jest widoczna.
   canUpload: boolean
   navLinks?: readonly SectionNavLink[]
+  // Akcje na końcu menu (np. udostępnienie wydarzenia).
+  navActions?: readonly SectionNavAction[]
   onUpload: (files: File[]) => void
   onLogout: () => void
 }
@@ -33,6 +36,7 @@ export function SiteHeader({
   navItems,
   canUpload,
   navLinks,
+  navActions,
   onUpload,
   onLogout,
 }: SiteHeaderProps) {
@@ -137,6 +141,7 @@ export function SiteHeader({
             items={navItems}
             activeId={activeSectionId}
             links={navLinks}
+            actions={navActions}
             className="lg:hidden sm:size-11"
           />
         </div>
@@ -146,6 +151,7 @@ export function SiteHeader({
         items={navItems}
         activeId={activeSectionId}
         links={navLinks}
+        actions={navActions}
         className="hidden border-t border-border/50 px-4 py-2 lg:block"
       />
     </header>

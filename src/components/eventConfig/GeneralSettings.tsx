@@ -4,7 +4,10 @@ import { useForm } from 'react-hook-form'
 import { AccessCodeDialog } from '@/components/events/AccessCodeDialog'
 import { describeSaveError, fromDateTimeLocal, toDateTimeLocal } from '@/components/events/eventFormat'
 import { Button } from '@/components/ui/button'
+import { ErrorMessage } from '@/components/ui/ErrorMessage'
+import { Switch } from '@/components/ui/switch'
 import { setAdminEventAccessCode, updateAdminEvent } from '@/lib/eventsAdminApi'
+import { setEventGuestSharing } from '@/lib/inviteLink'
 import { EVENT_LIMITS } from '@/types/adminEvent'
 import type { EventPage } from '@/types/eventPage'
 import { FormFooter, TextField } from './fields'
@@ -19,14 +22,36 @@ type GeneralFormValues = {
 type GeneralSettingsProps = {
   event: EventPage['event']
   onSaved: (name: string, startsAt: string | null) => void
+  onGuestSharingSaved: (enabled: boolean) => void
   onOpenPage: () => void
 }
 
-// Nazwa, data, kod dostępu i podgląd strony wydarzenia.
-export function GeneralSettings({ event, onSaved, onOpenPage }: GeneralSettingsProps) {
+// Nazwa, data, kod dostępu, udostępnianie przez gości i podgląd strony.
+export function GeneralSettings({ event, onSaved, onGuestSharingSaved, onOpenPage }: GeneralSettingsProps) {
   const id = useId()
   const busyRef = useRef(false)
   const [codeDialogOpen, setCodeDialogOpen] = useState(false)
+  const sharingBusyRef = useRef(false)
+  const [savingSharing, setSavingSharing] = useState(false)
+  const [sharingError, setSharingError] = useState<string | null>(null)
+
+  const toggleGuestSharing = async (enabled: boolean) => {
+    if (sharingBusyRef.current) return
+    sharingBusyRef.current = true
+    setSavingSharing(true)
+    setSharingError(null)
+
+    try {
+      await setEventGuestSharing(event.id, enabled)
+      onGuestSharingSaved(enabled)
+    } catch (err) {
+      console.error(err)
+      setSharingError(describeSaveError(err, 'Nie udało się zmienić ustawienia udostępniania.'))
+    } finally {
+      sharingBusyRef.current = false
+      setSavingSharing(false)
+    }
+  }
   const {
     register,
     handleSubmit,
@@ -91,6 +116,32 @@ export function GeneralSettings({ event, onSaved, onOpenPage }: GeneralSettingsP
           submitting={isSubmitting}
         />
       </form>
+
+      <div className="flex flex-col gap-2 border-t pt-4">
+        <div className="flex items-start gap-3">
+          <Switch
+            id={`${id}-guest-sharing`}
+            checked={event.guest_sharing_enabled}
+            disabled={savingSharing}
+            aria-busy={savingSharing}
+            aria-describedby={`${id}-guest-sharing-hint`}
+            onCheckedChange={(next) => void toggleGuestSharing(next)}
+          />
+          <div className="min-w-0 flex-1">
+            <label htmlFor={`${id}-guest-sharing`} className="font-medium text-foreground">
+              Goście mogą udostępniać wydarzenie
+            </label>
+            <p id={`${id}-guest-sharing-hint`} className="text-xs text-muted-foreground" aria-live="polite">
+              {savingSharing
+                ? 'Zapisywanie…'
+                : event.guest_sharing_enabled
+                  ? 'Każdy uczestnik ma w menu osobisty link zaproszenia.'
+                  : 'Link mają tylko administratorzy i edytorzy. Linki gości nie działają.'}
+            </p>
+          </div>
+        </div>
+        <ErrorMessage message={sharingError} />
+      </div>
 
       <div className="flex flex-wrap gap-2 border-t pt-4">
         <Button type="button" variant="outline" onClick={() => setCodeDialogOpen(true)}>

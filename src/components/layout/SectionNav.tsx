@@ -23,10 +23,19 @@ export type SectionNavLink = {
   icon?: LucideIcon
 }
 
+// Akcja na końcu menu (np. udostępnienie wydarzenia) - przycisk, nie link.
+export type SectionNavAction = {
+  key: string
+  label: string
+  icon?: LucideIcon
+  onSelect: () => void
+}
+
 type SectionNavProps = {
   items: readonly SectionNavItem[]
   activeId: string | null
   links?: readonly SectionNavLink[]
+  actions?: readonly SectionNavAction[]
 }
 
 // Przewija do sekcji (płynność i odstęp od nagłówka wynikają z CSS),
@@ -65,7 +74,13 @@ const itemClassName = (active: boolean) =>
   )
 
 // Poziomy pasek sekcji - widoczny od breakpointu lg.
-export function SectionNavBar({ items, activeId, links = [], className }: SectionNavProps & { className?: string }) {
+export function SectionNavBar({
+  items,
+  activeId,
+  links = [],
+  actions = [],
+  className,
+}: SectionNavProps & { className?: string }) {
   const scrollToSection = useScrollToSection()
 
   return (
@@ -98,18 +113,39 @@ export function SectionNavBar({ items, activeId, links = [], className }: Sectio
             </Link>
           </li>
         ))}
+        {actions.map(({ key, label, icon: Icon, onSelect }) => (
+          <li key={key}>
+            <button
+              type="button"
+              onClick={onSelect}
+              className={cn(itemClassName(false), 'inline-flex items-center gap-1.5 text-primary')}
+            >
+              {Icon && <Icon className="size-4" aria-hidden="true" />}
+              {label}
+            </button>
+          </li>
+        ))}
       </ul>
     </nav>
   )
 }
 
 // Przycisk z panelem bocznym - na węższych ekranach.
-export function SectionNavMenu({ items, activeId, links = [], className }: SectionNavProps & { className?: string }) {
+export function SectionNavMenu({
+  items,
+  activeId,
+  links = [],
+  actions = [],
+  className,
+}: SectionNavProps & { className?: string }) {
   const scrollToSection = useScrollToSection()
   const [open, setOpen] = useState(false)
   // Sekcja wybrana w panelu - przewijamy po jego zamknięciu, gdy Radix
   // zdejmie blokadę przewijania strony.
   const pendingSectionRef = useRef<string | null>(null)
+  // Akcja wybrana w panelu - uruchamiana po jego zamknięciu (np. okno
+  // dialogowe przejmuje wtedy fokus bez konfliktu z panelem).
+  const pendingActionRef = useRef<(() => void) | null>(null)
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -120,6 +156,13 @@ export function SectionNavMenu({ items, activeId, links = [], className }: Secti
       </SheetTrigger>
       <SheetContent
         onCloseAutoFocus={(event) => {
+          const action = pendingActionRef.current
+          if (action) {
+            pendingActionRef.current = null
+            action()
+            return
+          }
+
           const id = pendingSectionRef.current
           if (!id) return
 
@@ -168,6 +211,29 @@ export function SectionNavMenu({ items, activeId, links = [], className }: Secti
                     {Icon && <Icon className="size-4" aria-hidden="true" />}
                     {label}
                   </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {actions.length > 0 && (
+            <ul className="mt-4 flex flex-col gap-1 border-t border-border/70 pt-4">
+              {actions.map(({ key, label, icon: Icon, onSelect }) => (
+                <li key={key}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      pendingActionRef.current = onSelect
+                      setOpen(false)
+                    }}
+                    className={cn(
+                      itemClassName(false),
+                      'flex w-full items-center gap-2 py-3 text-left text-base text-primary'
+                    )}
+                  >
+                    {Icon && <Icon className="size-4" aria-hidden="true" />}
+                    {label}
+                  </button>
                 </li>
               ))}
             </ul>

@@ -131,6 +131,43 @@ export type Database = {
           },
         ];
       };
+      event_invites: {
+        Row: {
+          created_at: string;
+          created_by: string;
+          event_id: string;
+          token: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by: string;
+          event_id: string;
+          token: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string;
+          event_id?: string;
+          token?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "event_invites_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "event_invites_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       event_locations: {
         Row: {
           address: string;
@@ -173,6 +210,7 @@ export type Database = {
       event_members: {
         Row: {
           event_id: string;
+          invited_by: string | null;
           joined_at: string;
           role: Database["public"]["Enums"]["event_role"];
           user_id: string;
@@ -180,12 +218,14 @@ export type Database = {
         ComputedFields: never;
         Insert: {
           event_id: string;
+          invited_by?: string | null;
           joined_at?: string;
           role?: Database["public"]["Enums"]["event_role"];
           user_id: string;
         };
         Update: {
           event_id?: string;
+          invited_by?: string | null;
           joined_at?: string;
           role?: Database["public"]["Enums"]["event_role"];
           user_id?: string;
@@ -196,6 +236,13 @@ export type Database = {
             columns: ["event_id"];
             isOneToOne: false;
             referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "event_members_invited_by_fkey";
+            columns: ["invited_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
           {
@@ -332,6 +379,7 @@ export type Database = {
           access_code_hash: string;
           created_at: string;
           created_by: string | null;
+          guest_sharing_enabled: boolean;
           id: string;
           name: string;
           starts_at: string | null;
@@ -342,6 +390,7 @@ export type Database = {
           access_code_hash: string;
           created_at?: string;
           created_by?: string | null;
+          guest_sharing_enabled?: boolean;
           id?: string;
           name: string;
           starts_at?: string | null;
@@ -351,6 +400,7 @@ export type Database = {
           access_code_hash?: string;
           created_at?: string;
           created_by?: string | null;
+          guest_sharing_enabled?: boolean;
           id?: string;
           name?: string;
           starts_at?: string | null;
@@ -920,11 +970,21 @@ export type Database = {
         Args: { p_guest_id: string; p_seat_number?: number; p_table_id?: string };
         Returns: undefined;
       };
+      can_share_event: { Args: { p_event_id: string; p_user_id: string }; Returns: boolean };
       check_event_code: {
         Args: { p_access_code: string };
         Returns: {
           event_id: string;
           event_name: string;
+          starts_at: string;
+        }[];
+      };
+      check_invite: {
+        Args: { p_token: string };
+        Returns: {
+          event_id: string;
+          event_name: string;
+          inviter_name: string;
           starts_at: string;
         }[];
       };
@@ -945,7 +1005,15 @@ export type Database = {
         Args: { p_access_code: string; p_uid: string };
         Returns: string;
       };
+      find_event_invite: {
+        Args: { p_token: string; p_uid: string };
+        Returns: {
+          event_id: string;
+          inviter_id: string;
+        }[];
+      };
       get_event_page: { Args: { p_event_id: string }; Returns: Json };
+      get_my_invite_token: { Args: { p_event_id: string }; Returns: string };
       get_seating_plan: { Args: { p_event_id: string }; Returns: Json };
       has_event_role: {
         Args: { p_event_id: string; p_roles: Database["public"]["Enums"]["event_role"][] };
@@ -963,11 +1031,22 @@ export type Database = {
           starts_at: string;
         }[];
       };
+      join_event_by_invite: {
+        Args: { p_display_name?: string; p_token: string };
+        Returns: {
+          event_id: string;
+          event_name: string;
+          role: Database["public"]["Enums"]["event_role"];
+          starts_at: string;
+        }[];
+      };
       list_event_members_admin: {
         Args: { p_event_id: string };
         Returns: {
           display_name: string;
           email: string;
+          invited_by: string;
+          inviter_name: string;
           is_anonymous: boolean;
           joined_at: string;
           role: Database["public"]["Enums"]["event_role"];
@@ -1033,6 +1112,10 @@ export type Database = {
       set_display_name: { Args: { p_display_name: string }; Returns: undefined };
       set_event_access_code: {
         Args: { p_access_code: string; p_event_id: string };
+        Returns: undefined;
+      };
+      set_event_guest_sharing: {
+        Args: { p_enabled: boolean; p_event_id: string };
         Returns: undefined;
       };
       set_event_section_visibility: {

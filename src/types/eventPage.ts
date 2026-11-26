@@ -60,7 +60,14 @@ export type PagePhoto = {
 
 // Konfiguracja strony wydarzenia (get_event_page).
 export type EventPage = {
-  event: { id: string; name: string; starts_at: string | null; theme: ThemeKey }
+  event: {
+    id: string
+    name: string
+    starts_at: string | null
+    theme: ThemeKey
+    // Goście (rola GUEST) mogą udostępniać link do wydarzenia.
+    guest_sharing_enabled: boolean
+  }
   sections: Record<EventSectionKey, SectionConfig>
   schedule: ScheduleItem[]
   locations: EventLocation[]

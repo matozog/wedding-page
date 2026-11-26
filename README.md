@@ -56,6 +56,20 @@ Logowanie anonimowe działa od razu. Google jest włączone w `supabase/config.t
 Aplikacja musi działać na porcie 5173 — jeśli Vite wybierze inny port (bo 5173 jest zajęty),
 Supabase odrzuci powrót z Google.
 
+## Udostępnianie wydarzenia
+
+Każdy uczestnik ma w menu „Udostępnij wydarzenie” z osobistym linkiem zaproszenia
+(`/?zaproszenie=<token>`). Udostępnianie przez gości wyłącza się w konfiguracji wydarzenia,
+a zmiana kodu dostępu unieważnia wszystkie linki.
+
+Przycisk Messengera jest domyślnie tylko na telefonach (otwiera aplikację). Na komputerze
+Facebook wymaga identyfikatora aplikacji (Send Dialog). Żeby go włączyć, załóż aplikację na
+developers.facebook.com, dodaj domenę strony i ustaw publiczną zmienną przy buildzie:
+
+```sh
+VITE_FACEBOOK_APP_ID=<identyfikator aplikacji>
+```
+
 ## Deploy
 
 Branch `em` → `em.ozogowie.pl` (Cloudflare Worker `wedding-page-em`):

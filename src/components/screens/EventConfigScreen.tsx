@@ -76,6 +76,9 @@ function EventConfigContent({
                 update((current) => ({ ...current, event: { ...current.event, name, starts_at: startsAt } }))
                 onEventChanged(eventId, { id: eventId, name, startsAt })
               }}
+              onGuestSharingSaved={(enabled) =>
+                update((current) => ({ ...current, event: { ...current.event, guest_sharing_enabled: enabled } }))
+              }
               onOpenPage={() => onOpenPage(preview(page))}
             />
           </SettingsCard>

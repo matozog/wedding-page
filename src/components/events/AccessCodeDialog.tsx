@@ -63,7 +63,8 @@ export function AccessCodeDialog({ event, onClose, onSave }: AccessCodeDialogPro
         <DialogHeader>
           <DialogTitle>Nowy kod dostępu</DialogTitle>
           <DialogDescription>
-            {event.name}: dotychczasowy kod przestanie działać. Osoby, które już dołączyły, zachowują dostęp.
+            {event.name}: dotychczasowy kod i wszystkie udostępnione linki zaproszeń przestaną działać. Osoby, które
+            już dołączyły, zachowują dostęp.
           </DialogDescription>
         </DialogHeader>
 

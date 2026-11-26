@@ -111,6 +111,11 @@ export function EventMembersDialog({ event, onClose }: EventMembersDialogProps) 
                       <p className="truncate text-xs text-muted-foreground">
                         {member.is_anonymous ? 'Konto anonimowe' : member.email || 'Konto Google'}
                       </p>
+                      {member.invited_by && (
+                        <p className="truncate text-xs text-muted-foreground">
+                          Zaproszenie od: {member.inviter_name || 'Bez nazwy'}
+                        </p>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 sm:w-52">
                       <div className="flex-1">
