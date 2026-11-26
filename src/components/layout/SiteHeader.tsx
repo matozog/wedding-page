@@ -1,5 +1,6 @@
-import { Camera, LogOut, Loader2 } from 'lucide-react'
+import { Camera, LogOut, Loader2, UserPen } from 'lucide-react'
 import { useEffect, useMemo, useRef } from 'react'
+import { useAccount } from '@/components/account/accountContext'
 import {
   SectionNavBar,
   SectionNavMenu,
@@ -11,6 +12,9 @@ import { Progress } from '@/components/ui/progress'
 import type { SectionNavItem } from '@/components/layout/SectionNav'
 import { useActiveSection } from '@/hooks/useActiveSection'
 import { PHOTO_INPUT_ACCEPT } from '@/lib/constants'
+
+const ACCOUNT_LINK_CLASS =
+  'inline-flex items-center gap-1 rounded-sm text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
 type SiteHeaderProps = {
   eventName: string
@@ -40,6 +44,7 @@ export function SiteHeader({
   onUpload,
   onLogout,
 }: SiteHeaderProps) {
+  const account = useAccount()
   const headerRef = useRef<HTMLElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const sectionIds = useMemo(() => navItems.map((item) => item.id), [navItems])
@@ -79,14 +84,18 @@ export function SiteHeader({
             Witaj, <span className="font-medium text-foreground">{nickname}</span>
             <span className="hidden sm:inline"> — miło, że jesteś z nami</span>
           </p>
-          <button
-            type="button"
-            onClick={onLogout}
-            className="mt-1 inline-flex items-center gap-1 rounded-sm text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <LogOut className="size-3" />
-            Zmień pseudonim / wyloguj
-          </button>
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+            {account && (
+              <button type="button" onClick={account.onChangeNickname} className={ACCOUNT_LINK_CLASS}>
+                <UserPen className="size-3" aria-hidden="true" />
+                Zmień pseudonim
+              </button>
+            )}
+            <button type="button" onClick={onLogout} className={ACCOUNT_LINK_CLASS}>
+              <LogOut className="size-3" aria-hidden="true" />
+              {account?.isAnonymous ? 'Wyjdź' : 'Wyloguj'}
+            </button>
+          </div>
         </div>
 
         <div className="flex shrink-0 items-start gap-2">

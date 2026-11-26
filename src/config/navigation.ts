@@ -7,6 +7,7 @@ export const SECTION_IDS = {
   couple: 'para',
   schedule: 'plan-dnia',
   seating: 'plan-sali',
+  shopping: 'lista-zakupow',
   location: 'mapa',
   contact: 'kontakt',
 } as const
@@ -21,6 +22,7 @@ export const SECTION_NAV_ITEMS: readonly { key: EventSectionKey; id: SectionId; 
   { key: 'couple', id: SECTION_IDS.couple, label: 'O nas' },
   { key: 'schedule', id: SECTION_IDS.schedule, label: 'Plan' },
   { key: 'seating', id: SECTION_IDS.seating, label: 'Plan sali' },
+  { key: 'shopping', id: SECTION_IDS.shopping, label: 'Lista' },
   { key: 'location', id: SECTION_IDS.location, label: 'Dojazd' },
   { key: 'contact', id: SECTION_IDS.contact, label: 'Kontakt' },
 ]

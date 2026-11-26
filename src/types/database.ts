@@ -396,6 +396,101 @@ export type Database = {
           },
         ];
       };
+      event_shopping_items: {
+        Row: {
+          assigned_to: string | null;
+          created_at: string;
+          created_by: string | null;
+          event_id: string;
+          id: string;
+          name: string;
+          note: string | null;
+          quantity: number | null;
+          unit: string | null;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          assigned_to?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          event_id: string;
+          id?: string;
+          name: string;
+          note?: string | null;
+          quantity?: number | null;
+          unit?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          assigned_to?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          event_id?: string;
+          id?: string;
+          name?: string;
+          note?: string | null;
+          quantity?: number | null;
+          unit?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "event_shopping_items_assigned_to_fkey";
+            columns: ["assigned_to"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "event_shopping_items_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "event_shopping_items_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      event_shopping_settings: {
+        Row: {
+          allow_assign: boolean;
+          event_id: string;
+          show_author: boolean;
+          show_note: boolean;
+          show_quantity: boolean;
+        };
+        ComputedFields: never;
+        Insert: {
+          allow_assign?: boolean;
+          event_id: string;
+          show_author?: boolean;
+          show_note?: boolean;
+          show_quantity?: boolean;
+        };
+        Update: {
+          allow_assign?: boolean;
+          event_id?: string;
+          show_author?: boolean;
+          show_note?: boolean;
+          show_quantity?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "event_shopping_settings_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: true;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       events: {
         Row: {
           access_code_hash: string;
@@ -995,6 +1090,7 @@ export type Database = {
         Args: { p_guest_id: string; p_seat_number?: number; p_table_id?: string };
         Returns: undefined;
       };
+      assign_shopping_item: { Args: { p_item_id: string }; Returns: undefined };
       can_share_event: { Args: { p_event_id: string; p_user_id: string }; Returns: boolean };
       check_event_code: {
         Args: { p_access_code: string };
@@ -1145,6 +1241,10 @@ export type Database = {
         };
         Returns: Json;
       };
+      save_shopping_section: {
+        Args: { p_content: Json; p_event_id: string; p_settings: Json };
+        Returns: undefined;
+      };
       set_display_name: { Args: { p_display_name: string }; Returns: undefined };
       set_event_access_code: {
         Args: { p_access_code: string; p_event_id: string };
@@ -1180,8 +1280,11 @@ export type Database = {
       };
       set_start_theme: { Args: { p_colors?: Json; p_theme: string }; Returns: undefined };
       shares_event_with: { Args: { p_user_id: string }; Returns: boolean };
+      shopping_assign_allowed: { Args: { p_event_id: string }; Returns: boolean };
+      shopping_list_open: { Args: { p_event_id: string }; Returns: boolean };
       storage_path_event_id: { Args: { p_name: string }; Returns: string };
       storage_path_owner: { Args: { p_name: string }; Returns: string };
+      unassign_shopping_item: { Args: { p_item_id: string }; Returns: undefined };
       update_event: {
         Args: { p_event_id: string; p_name: string; p_starts_at: string };
         Returns: undefined;
@@ -1224,6 +1327,7 @@ export type Database = {
         | "couple"
         | "schedule"
         | "seating"
+        | "shopping"
         | "location"
         | "contact"
         | "footer";
@@ -1350,7 +1454,16 @@ export const Constants = {
     Enums: {
       attendance_likelihood: ["UNKNOWN", "CONFIRMED", "LIKELY", "UNLIKELY", "DECLINED"],
       event_role: ["ADMIN", "EDITOR", "GUEST"],
-      event_section: ["gallery", "couple", "schedule", "seating", "location", "contact", "footer"],
+      event_section: [
+        "gallery",
+        "couple",
+        "schedule",
+        "seating",
+        "shopping",
+        "location",
+        "contact",
+        "footer",
+      ],
       expense_status: ["UNPAID", "DEPOSIT_PAID", "PAID"],
       guest_age_group: ["ADULT", "CHILD", "INFANT"],
       seating_table_shape: ["RECT", "L", "U"],

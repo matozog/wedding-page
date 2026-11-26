@@ -12,6 +12,7 @@ import { ContactsEditor } from './ContactsEditor'
 import { LocationsEditor } from './LocationsEditor'
 import { PagePhotosManager } from './PagePhotosManager'
 import { ScheduleEditor } from './ScheduleEditor'
+import { ShoppingListEditor } from './ShoppingListEditor'
 import { TextSectionEditor } from './TextSectionEditor'
 
 type SectionsSettingsProps = {
@@ -166,6 +167,14 @@ export function SectionsSettings({ page, onChange }: SectionsSettingsProps) {
             bodyLabel="Wskazówka pod wyszukiwarką"
             bodyHint="Np. „Kliknij swoje miejsce, aby zobaczyć szczegóły.”. Układ stołów i gości ustawia organizator w Zarządzanie → Plan sali; goście widzą plan dopiero po jego opublikowaniu."
             onSaved={(texts) => saveTexts('seating', texts)}
+          />
+        )
+      case 'shopping':
+        return (
+          <ShoppingListEditor
+            eventId={eventId}
+            config={config}
+            onSaved={(texts) => saveTexts('shopping', texts)}
           />
         )
       case 'footer':

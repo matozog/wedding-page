@@ -3,6 +3,7 @@ import { lazy, Suspense, useMemo, useState } from 'react'
 import { AboutCoupleSection } from '@/components/sections/AboutCoupleSection'
 import { ContactSection } from '@/components/sections/ContactSection'
 import { LocationMapSection } from '@/components/sections/LocationMapSection'
+import { ShoppingListSection } from '@/components/sections/ShoppingListSection'
 import { WeddingScheduleSection } from '@/components/sections/WeddingScheduleSection'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import type { SectionNavAction, SectionNavLink } from '@/components/layout/SectionNav'
@@ -24,6 +25,11 @@ const SeatingPlanSection = lazy(() =>
 type EventGalleryScreenProps = {
   eventName: string
   nickname: string
+  userId: string | null
+  // ADMIN / EDITOR / super admin - edycja wszystkich pozycji listy zakupów.
+  isOrganizer: boolean
+  // Zmiana wymusza ponowne pobranie listy zakupów (np. po zmianie pseudonimu).
+  listRefreshKey: number
   // Konfiguracja strony (sekcje, treści) - null do wczytania.
   page: EventPage | null
   pageError: string | null
@@ -58,6 +64,8 @@ const visibleSections = (page: EventPage | null, hasSeatingPlan: boolean): Reado
     gallery: true,
     couple: Boolean(about?.content_title || about?.content_body || page.facts.length > 0 || page.photos.length > 0),
     seating: hasSeatingPlan,
+    // pusta lista też jest pokazywana - goście ją wypełniają
+    shopping: true,
     schedule: page.schedule.length > 0,
     location: page.locations.length > 0,
     contact: page.contacts.length > 0,
@@ -71,6 +79,9 @@ const visibleSections = (page: EventPage | null, hasSeatingPlan: boolean): Reado
 export function EventGalleryScreen({
   eventName,
   nickname,
+  userId,
+  isOrganizer,
+  listRefreshKey,
   page,
   pageError,
   pageNotFound,
@@ -168,6 +179,16 @@ export function EventGalleryScreen({
                 plan={seatingPlan}
               />
             </Suspense>
+          )}
+          {visible.has('shopping') && (
+            <ShoppingListSection
+              eventId={page.event.id}
+              header={page.sections.shopping}
+              emptyText={page.sections.shopping.content_body}
+              userId={userId}
+              isOrganizer={isOrganizer}
+              refreshKey={listRefreshKey}
+            />
           )}
           {visible.has('location') && <LocationMapSection header={page.sections.location} locations={page.locations} />}
           {visible.has('contact') && <ContactSection header={page.sections.contact} contacts={page.contacts} />}

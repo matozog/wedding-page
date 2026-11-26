@@ -64,9 +64,10 @@ select pg_temp.act_as(:S);
 select public.set_member_role(:'ev', :B, 'ADMIN');
 
 -- defaults ----------------------------------------------------------------------------
-select ok((select count(*) = 7 from public.event_sections where event_id = :'ev'), 'new event gets 7 sections (footer included)');
+select ok((select count(*) = 8 from public.event_sections where event_id = :'ev'), 'new event gets 8 sections (footer included)');
 select ok((select not is_visible from public.event_sections where event_id = :'ev' and section = 'seating'), 'seating hidden by default');
-select ok((select bool_and(is_visible) from public.event_sections where event_id = :'ev' and section <> 'seating'), 'other sections visible by default');
+select ok((select not is_visible from public.event_sections where event_id = :'ev' and section = 'shopping'), 'shopping list hidden by default');
+select ok((select bool_and(is_visible) from public.event_sections where event_id = :'ev' and section not in ('seating', 'shopping')), 'other sections visible by default');
 select ok((select count(*) = 0 from public.event_schedule_items where event_id = :'ev')
           and (select count(*) = 0 from public.event_contacts where event_id = :'ev')
           and (select count(*) = 0 from public.event_about_facts where event_id = :'ev'), 'no content copied into a new event');
@@ -152,7 +153,7 @@ select throws_ok(format($$select public.delete_event_page_photo(%L)$$, :'photo_b
 -- reading ---------------------------------------------------------------------------
 select pg_temp.act_as(:G);
 select ok((select (public.get_event_page(:'ev') -> 'event' ->> 'theme') = 'midnight'), 'guest reads the page config');
-select ok((select jsonb_array_length(public.get_event_page(:'ev') -> 'sections') = 7), 'guest gets all sections');
+select ok((select jsonb_array_length(public.get_event_page(:'ev') -> 'sections') = 8), 'guest gets all sections');
 select ok((select (s ->> 'is_visible')::boolean = false from jsonb_array_elements(public.get_event_page(:'ev') -> 'sections') s where s ->> 'section' = 'footer'), 'hidden section flagged');
 select ok((select jsonb_array_length(public.get_event_page(:'ev') -> 'facts') = 2), 'guest gets facts');
 select ok((select public.get_event_page(:'ev') -> 'photos' -> 0 ->> 'alt_text' = 'Nowy opis'), 'guest gets photos');

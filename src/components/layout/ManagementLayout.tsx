@@ -1,6 +1,7 @@
-import { ArrowLeft, ChevronRight, LogOut, ShieldAlert } from 'lucide-react'
+import { ArrowLeft, ChevronRight, LogOut, ShieldAlert, UserPen } from 'lucide-react'
 import { Fragment, useEffect, type ReactNode } from 'react'
 import { Link } from 'react-router'
+import { useAccount } from '@/components/account/accountContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
@@ -40,6 +41,9 @@ export function ManagementLayout({
   onLogout,
   children,
 }: ManagementLayoutProps) {
+  const account = useAccount()
+  const logoutLabel = account?.isAnonymous ? 'Wyjdź' : 'Wyloguj'
+
   // Router nie resetuje przewinięcia - podstrona otwierałaby się w połowie.
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
@@ -83,9 +87,22 @@ export function ManagementLayout({
           <p className="hidden shrink-0 text-sm text-muted-foreground md:block">
             Zalogowano jako <span className="font-medium text-foreground">{nickname}</span>
           </p>
-          <Button type="button" variant="ghost" size="sm" onClick={onLogout} aria-label="Wyloguj" title="Wyloguj">
+          {account && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              onClick={account.onChangeNickname}
+              aria-label="Zmień nazwę"
+              title="Zmień nazwę"
+            >
+              <UserPen className="size-4" />
+            </Button>
+          )}
+          <Button type="button" variant="ghost" size="sm" onClick={onLogout} aria-label={logoutLabel} title={logoutLabel}>
             <LogOut className="size-4" />
-            <span className="hidden sm:inline">Wyloguj</span>
+            <span className="hidden sm:inline">{logoutLabel}</span>
           </Button>
           {showEventLink && (
             <Button asChild variant="outline" size="sm">

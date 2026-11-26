@@ -1,6 +1,9 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, Route, Routes, useMatch, useNavigate } from 'react-router'
 import { CalendarCog, Settings } from 'lucide-react'
+import { AccountContext, type AccountContextValue } from '@/components/account/accountContext'
+import { ChangeNicknameDialog } from '@/components/account/ChangeNicknameDialog'
+import { LeaveEventDialog } from '@/components/account/LeaveEventDialog'
 import type { SectionNavLink } from '@/components/layout/SectionNav'
 import { CodeEntryScreen } from '@/components/screens/CodeEntryScreen'
 import { EventConfigScreen } from '@/components/screens/EventConfigScreen'
@@ -10,6 +13,7 @@ import { ExpensesManagementScreen } from '@/components/screens/ExpensesManagemen
 import { GuestsManagementScreen } from '@/components/screens/GuestsManagementScreen'
 import { ManagementScreen } from '@/components/screens/ManagementScreen'
 import { NicknameScreen } from '@/components/screens/NicknameScreen'
+import { ShoppingManagementScreen } from '@/components/screens/ShoppingManagementScreen'
 import type { OrganizerAccess } from '@/components/screens/OrganizerGate'
 import { useDocumentTheme } from '@/hooks/useDocumentTheme'
 import { useEventPage } from '@/hooks/useEventPage'
@@ -59,6 +63,7 @@ function App() {
     userId,
     hasNickname,
     isSuperAdmin,
+    isAnonymous,
     hasGoogleAccount,
     accountLabel,
     error: sessionError,
@@ -71,6 +76,8 @@ function App() {
     enterEvent,
     syncEventChange,
     cancelPendingEvent,
+    changeNickname,
+    leaveEvent,
     logout,
   } = useEventSession()
 
@@ -230,6 +237,36 @@ function App() {
     [enterEvent, navigate]
   )
 
+  // Gość z kontem anonimowym wychodzi bez wylogowania (konto zostaje na
+  // urządzeniu); konto Google wylogowuje się jak dotąd.
+  const [leaveOpen, setLeaveOpen] = useState(false)
+  const [nicknameOpen, setNicknameOpen] = useState(false)
+  // Zwiększany po zmianie pseudonimu - lista zakupów pobiera nowe nazwy.
+  const [nicknameVersion, setNicknameVersion] = useState(0)
+
+  const requestLeave = useCallback(() => {
+    if (isAnonymous) {
+      setLeaveOpen(true)
+    } else {
+      logout()
+    }
+  }, [isAnonymous, logout])
+
+  const handleChangeNickname = useCallback(
+    async (value: string) => {
+      await changeNickname(value)
+      setNicknameVersion((current) => current + 1)
+      // Nazwy autorów przy zdjęciach.
+      await loadPhotos()
+    },
+    [changeNickname, loadPhotos]
+  )
+
+  const account = useMemo<AccountContextValue | null>(
+    () => (hasNickname ? { isAnonymous, onChangeNickname: () => setNicknameOpen(true) } : null),
+    [hasNickname, isAnonymous]
+  )
+
   const organizerAccess: OrganizerAccess = {
     initializing,
     submitting,
@@ -242,164 +279,196 @@ function App() {
     onLogout: logout,
   }
 
-  // Panel organizatora działa bez wybranego wydarzenia i bez pseudonimu -
-  // obsługujemy go przed ekranami kodu i pseudonimu.
-  if (isEventsRoute) {
-    return (
-      <EventsManagementScreen
-        access={organizerAccess}
-        currentEventId={eventId}
-        startTheme={startTheme}
-        onEnter={handleEnterEvent}
-        onEventChanged={syncEventChange}
-        onStartThemeSaved={updateStartTheme}
-      />
-    )
-  }
+  const renderScreen = () => {
+    // Panel organizatora działa bez wybranego wydarzenia i bez pseudonimu -
+    // obsługujemy go przed ekranami kodu i pseudonimu.
+    if (isEventsRoute) {
+      return (
+        <EventsManagementScreen
+          access={organizerAccess}
+          currentEventId={eventId}
+          startTheme={startTheme}
+          onEnter={handleEnterEvent}
+          onEventChanged={syncEventChange}
+          onStartThemeSaved={updateStartTheme}
+        />
+      )
+    }
 
-  if (configMatch?.params.eventId) {
-    return (
-      <EventConfigScreen
-        key={configMatch.params.eventId}
-        eventId={configMatch.params.eventId}
-        access={organizerAccess}
-        currentEventId={eventId}
-        onOpenPage={handleOpenEventPage}
-        onEventChanged={syncEventChange}
-        onThemeSaved={handleThemeSaved}
-      />
-    )
-  }
+    if (configMatch?.params.eventId) {
+      return (
+        <EventConfigScreen
+          key={configMatch.params.eventId}
+          eventId={configMatch.params.eventId}
+          access={organizerAccess}
+          currentEventId={eventId}
+          onOpenPage={handleOpenEventPage}
+          onEventChanged={syncEventChange}
+          onThemeSaved={handleThemeSaved}
+        />
+      )
+    }
 
-  // Zapisane wydarzenie czeka na profil z bazy, a kod sprzed logowania Google
-  // na dołączenie - bez tego mignąłby ekran pseudonimu. Link zaproszenia
-  // jest jeszcze sprawdzany - bez mignięcia ekranu kodu.
-  if (resolvingInvite || (initializing && (session || pendingEvent))) {
-    return null
-  }
+    // Zapisane wydarzenie czeka na profil z bazy, a kod sprzed logowania Google
+    // na dołączenie - bez tego mignąłby ekran pseudonimu. Link zaproszenia
+    // jest jeszcze sprawdzany - bez mignięcia ekranu kodu.
+    if (resolvingInvite || (initializing && (session || pendingEvent))) {
+      return null
+    }
 
-  // Ekrany kodu i pseudonimu nie zmieniają adresu, więc po wejściu do
-  // wydarzenia użytkownik trafia na stronę, którą otworzył (np. /management).
-  if (hasNickname && session) {
-    return (
-      <Routes>
-        <Route
-          path={ROUTES.home}
-          element={
-            <EventGalleryScreen
-              eventName={session.name}
-              nickname={nickname}
-              page={page?.event.id === session.id ? page : null}
-              pageError={pageError}
-              pageNotFound={pageNotFound}
-              onRetryPage={reloadPage}
-              onLeaveEvent={() => syncEventChange(session.id, null)}
-              photos={photos}
-              loadingPhotos={loadingPhotos}
-              uploading={uploading}
-              uploadProgress={uploadProgress}
-              error={error}
-              navLinks={navLinks}
-              getShareLink={canShare ? getShareLink : undefined}
-              describeShareError={describeShareError}
-              canDeletePhoto={canDeletePhoto}
-              getPhotoUrl={getPhotoUrl}
-              onUpload={uploadPhotos}
-              onDeletePhoto={handleDeletePhoto}
-              onLogout={logout}
-            />
-          }
-        />
-        <Route
-          path={ROUTES.management}
-          element={
-            <ManagementScreen
-              eventId={session.id}
-              eventName={session.name}
-              nickname={nickname}
-              canView={canOpenManagement}
-              canManage={canManage}
-              error={sessionError}
-              onLogout={logout}
-            />
-          }
-        />
-        <Route
-          path={ROUTES.managementExpenses}
-          element={
-            <ExpensesManagementScreen
-              eventId={session.id}
-              eventName={session.name}
-              nickname={nickname}
-              canView={canManage}
-              error={sessionError}
-              onLogout={logout}
-            />
-          }
-        />
-        <Route
-          path={ROUTES.managementGuests}
-          element={
-            <GuestsManagementScreen
-              eventId={session.id}
-              eventName={session.name}
-              nickname={nickname}
-              canView={canOpenManagement}
-              canEdit={canEditGuestList}
-              canDelete={canManage}
-              error={sessionError}
-              onLogout={logout}
-            />
-          }
-        />
-        <Route
-          path={ROUTES.managementSeating}
-          element={
-            <Suspense fallback={null}>
-              <SeatingManagementScreen
+    // Ekrany kodu i pseudonimu nie zmieniają adresu, więc po wejściu do
+    // wydarzenia użytkownik trafia na stronę, którą otworzył (np. /management).
+    if (hasNickname && session) {
+      return (
+        <Routes>
+          <Route
+            path={ROUTES.home}
+            element={
+              <EventGalleryScreen
+                eventName={session.name}
+                nickname={nickname}
+                userId={userId}
+                isOrganizer={canEditGuestList}
+                listRefreshKey={nicknameVersion}
+                page={page?.event.id === session.id ? page : null}
+                pageError={pageError}
+                pageNotFound={pageNotFound}
+                onRetryPage={reloadPage}
+                onLeaveEvent={() => syncEventChange(session.id, null)}
+                photos={photos}
+                loadingPhotos={loadingPhotos}
+                uploading={uploading}
+                uploadProgress={uploadProgress}
+                error={error}
+                navLinks={navLinks}
+                getShareLink={canShare ? getShareLink : undefined}
+                describeShareError={describeShareError}
+                canDeletePhoto={canDeletePhoto}
+                getPhotoUrl={getPhotoUrl}
+                onUpload={uploadPhotos}
+                onDeletePhoto={handleDeletePhoto}
+                onLogout={requestLeave}
+              />
+            }
+          />
+          <Route
+            path={ROUTES.management}
+            element={
+              <ManagementScreen
                 eventId={session.id}
                 eventName={session.name}
                 nickname={nickname}
+                canView={canOpenManagement}
+                canManage={canManage}
+                error={sessionError}
+                onLogout={requestLeave}
+              />
+            }
+          />
+          <Route
+            path={ROUTES.managementExpenses}
+            element={
+              <ExpensesManagementScreen
+                eventId={session.id}
+                eventName={session.name}
+                nickname={nickname}
+                canView={canManage}
+                error={sessionError}
+                onLogout={requestLeave}
+              />
+            }
+          />
+          <Route
+            path={ROUTES.managementGuests}
+            element={
+              <GuestsManagementScreen
+                eventId={session.id}
+                eventName={session.name}
+                nickname={nickname}
+                canView={canOpenManagement}
+                canEdit={canEditGuestList}
+                canDelete={canManage}
+                error={sessionError}
+                onLogout={requestLeave}
+              />
+            }
+          />
+          <Route
+            path={ROUTES.managementSeating}
+            element={
+              <Suspense fallback={null}>
+                <SeatingManagementScreen
+                  eventId={session.id}
+                  eventName={session.name}
+                  nickname={nickname}
+                  canView={canEditGuestList}
+                  error={sessionError}
+                  onLogout={requestLeave}
+                />
+              </Suspense>
+            }
+          />
+          <Route
+            path={ROUTES.managementShopping}
+            element={
+              <ShoppingManagementScreen
+                eventId={session.id}
+                eventName={session.name}
+                nickname={nickname}
+                userId={userId}
                 canView={canEditGuestList}
                 error={sessionError}
-                onLogout={logout}
+                onLogout={requestLeave}
               />
-            </Suspense>
-          }
+            }
+          />
+          <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
+        </Routes>
+      )
+    }
+
+    const nicknameEvent = session ?? pendingEvent
+
+    if (nicknameEvent) {
+      return (
+        <NicknameScreen
+          eventName={nicknameEvent.name}
+          nickname={nickname}
+          error={sessionError}
+          submitting={submitting}
+          onNicknameChange={setNickname}
+          onSubmit={handleSaveNickname}
+          onGoogleLogin={loginWithGoogle}
+          onChangeCode={session ? undefined : cancelPendingEvent}
+          fromInvite={!session && pendingFromInvite}
+          inviterName={pendingInviterName}
         />
-        <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
-      </Routes>
-    )
-  }
+      )
+    }
 
-  const nicknameEvent = session ?? pendingEvent
-
-  if (nicknameEvent) {
     return (
-      <NicknameScreen
-        eventName={nicknameEvent.name}
-        nickname={nickname}
+      <CodeEntryScreen
+        title="Witaj"
+        code={code}
         error={sessionError}
         submitting={submitting}
-        onNicknameChange={setNickname}
-        onSubmit={handleSaveNickname}
-        onGoogleLogin={loginWithGoogle}
-        onChangeCode={session ? undefined : cancelPendingEvent}
-        fromInvite={!session && pendingFromInvite}
-        inviterName={pendingInviterName}
+        onCodeChange={setCode}
+        onSubmit={checkCode}
       />
     )
   }
 
   return (
-    <CodeEntryScreen
-      title="Witaj"
-      code={code}
-      error={sessionError}
-      submitting={submitting}
-      onCodeChange={setCode}
-      onSubmit={checkCode}
-    />
+    <AccountContext.Provider value={account}>
+      {renderScreen()}
+      <ChangeNicknameDialog
+        open={nicknameOpen}
+        nickname={nickname}
+        onOpenChange={setNicknameOpen}
+        onSave={handleChangeNickname}
+      />
+      <LeaveEventDialog open={leaveOpen} onOpenChange={setLeaveOpen} onLeave={leaveEvent} onSignOut={logout} />
+    </AccountContext.Provider>
   )
 }
 

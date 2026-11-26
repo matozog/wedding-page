@@ -580,6 +580,32 @@ export function useEventSession() {
     [updateStored]
   )
 
+  // Zmiana nazwy tego samego konta (bez zakładania nowego profilu).
+  // Rzuca błąd z komunikatem dla użytkownika.
+  const changeNickname = useCallback(
+    async (value: string) => {
+      const name = value.trim()
+
+      if (!name) {
+        throw new Error('Wpisz pseudonim.')
+      }
+
+      await setDisplayName(name)
+      await refreshProfile()
+    },
+    [refreshProfile]
+  )
+
+  // Wyjście z wydarzenia bez wylogowania - konto (i pseudonim) zostaje na
+  // tym urządzeniu, ponowne wpisanie kodu od razu otwiera wydarzenie.
+  const leaveEvent = useCallback(() => {
+    updateStored(null)
+    updatePending(null)
+    setCode('')
+    setError(null)
+  }, [updatePending, updateStored])
+
+  // Pełne wylogowanie. Konto anonimowe przepada na tym urządzeniu.
   const logout = useCallback(() => {
     updateStored(null)
     updatePending(null)
@@ -616,6 +642,7 @@ export function useEventSession() {
     userId: profile?.id ?? null,
     hasNickname: Boolean(profile?.displayName),
     isSuperAdmin,
+    isAnonymous: profile?.isAnonymous ?? false,
     // Zalogowane konto Google (nie anonimowe) - panel organizatora.
     hasGoogleAccount: profile !== null && !profile.isAnonymous,
     accountLabel: profile?.displayName ?? profile?.email ?? '',
@@ -629,6 +656,8 @@ export function useEventSession() {
     enterEvent,
     syncEventChange,
     cancelPendingEvent,
+    changeNickname,
+    leaveEvent,
     logout,
   }
 }

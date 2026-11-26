@@ -1,9 +1,10 @@
-import { ChevronRight, LayoutGrid, Users, Wallet } from 'lucide-react'
+import { ChevronRight, LayoutGrid, ShoppingBasket, Users, Wallet } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { ManagementLayout } from '@/components/layout/ManagementLayout'
 import { useExpenseSummary } from '@/hooks/useExpenseSummary'
 import { useGuestSummary } from '@/hooks/useGuestSummary'
+import { useShoppingSummary } from '@/hooks/useShoppingSummary'
 import { formatPlnShort } from '@/lib/money'
 import { countPl } from '@/lib/plural'
 import { ROUTES } from '@/lib/routes'
@@ -68,6 +69,7 @@ export function ManagementScreen({
 }: ManagementScreenProps) {
   const { stats, failed } = useGuestSummary(eventId, canView)
   const expenses = useExpenseSummary(eventId, canManage)
+  const shopping = useShoppingSummary(eventId, canView)
 
   const guestSummary = stats
     ? `${countPl(stats.all.total, 'osoba', 'osoby', 'osób')} na liście · ${stats.expected.total} spodziewanych`
@@ -85,6 +87,19 @@ export function ManagementScreen({
           .filter(Boolean)
           .join(' · ')
     : expenses.failed
+      ? SUMMARY_ERROR
+      : 'Wczytywanie…'
+
+  const shoppingSummary = shopping.summary
+    ? [
+        shopping.summary.count === 0
+          ? 'Lista jest pusta'
+          : `${countPl(shopping.summary.count, 'pozycja', 'pozycje', 'pozycji')} · ${shopping.summary.free} bez osoby`,
+        !shopping.summary.sectionVisible && 'sekcja ukryta na stronie',
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : shopping.failed
       ? SUMMARY_ERROR
       : 'Wczytywanie…'
 
@@ -113,6 +128,13 @@ export function ManagementScreen({
           title="Plan sali"
           description="Układ stołów, usadzanie gości i publikacja planu na stronie."
           summary="Przejdź do edytora"
+        />
+        <ManagementTile
+          to={ROUTES.managementShopping}
+          icon={<ShoppingBasket className="size-5" aria-hidden="true" />}
+          title="Lista zakupów"
+          description="Co trzeba kupić lub przynieść i kto się tym zajmuje."
+          summary={shoppingSummary}
         />
         {canManage && (
           <ManagementTile

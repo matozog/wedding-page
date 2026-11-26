@@ -4,6 +4,7 @@ export const ROUTES = {
   managementGuests: '/management/guests',
   managementExpenses: '/management/expenses',
   managementSeating: '/management/seating',
+  managementShopping: '/management/shopping',
   // Panel super admina - wszystkie wydarzenia. Dostępny także bez wybranego
   // wydarzenia (wejście bezpośrednio pod ten adres).
   events: '/events',
