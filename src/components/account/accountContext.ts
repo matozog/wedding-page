@@ -8,8 +8,9 @@ export type AccountContextValue = {
   isAnonymous: boolean
   // Otwiera okno zmiany pseudonimu.
   onChangeNickname: () => void
-  // Konto anonimowe - połączenie z kontem Google (przekierowanie).
-  onLinkGoogle: () => void
+  // Konto anonimowe - okno przejścia na konto Google (połączenie lub
+  // przełączenie).
+  onSwitchAccount: () => void
 }
 
 export const AccountContext = createContext<AccountContextValue | null>(null)

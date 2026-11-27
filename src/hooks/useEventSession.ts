@@ -335,7 +335,7 @@ export function useEventSession() {
     clearAuthRedirectParams()
     setError(
       code === IDENTITY_ALREADY_EXISTS_CODE
-        ? 'To konto Google ma już własne konto w aplikacji, więc nie można go połączyć z pseudonimem. Zostajesz przy pseudonimie.'
+        ? 'To konto Google jest już używane w aplikacji, więc nie można go połączyć z pseudonimem. Aby z niego korzystać, wybierz „Przełącz konto” → „Zaloguj się kontem Google”.'
         : 'Logowanie przez Google nie powiodło się.'
     )
   }, [])
@@ -488,7 +488,9 @@ export function useEventSession() {
     return result ?? false
   }, [joinWith, nickname, refreshProfile, runExclusive, updatePending])
 
-  const loginWithGoogle = useCallback(async () => {
+  // selectAccount - Google pokazuje wybór konta (przełączenie z pseudonimu
+  // na inne konto Google).
+  const startGoogleSignIn = useCallback(async (selectAccount: boolean) => {
     setError(null)
 
     await runExclusive(async () => {
@@ -506,7 +508,7 @@ export function useEventSession() {
       }
 
       try {
-        await signInWithGoogle()
+        await signInWithGoogle({ selectAccount })
       } catch (err) {
         console.error(err)
         // Kod skopiowany z dołączonego wydarzenia nie może zostać, bo
@@ -519,6 +521,13 @@ export function useEventSession() {
       }
     })
   }, [runExclusive, updatePending])
+
+  const loginWithGoogle = useCallback(() => startGoogleSignIn(false), [startGoogleSignIn])
+
+  // Gość z pseudonimem przechodzi na konto Google (osobne konto). Po powrocie
+  // dołącza do tego samego wydarzenia tym samym kodem lub linkiem; wpisy
+  // z pseudonimu zostają przy koncie anonimowym.
+  const switchToGoogle = useCallback(() => startGoogleSignIn(true), [startGoogleSignIn])
 
   // Powrót z ekranu pseudonimu do wpisania kodu.
   const cancelPendingEvent = useCallback(() => {
@@ -681,6 +690,7 @@ export function useEventSession() {
     cancelPendingEvent,
     changeNickname,
     linkGoogle,
+    switchToGoogle,
     leaveEvent,
     logout,
   }

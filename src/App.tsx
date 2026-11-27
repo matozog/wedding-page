@@ -4,6 +4,7 @@ import { CalendarCog, Settings } from 'lucide-react'
 import { AccountContext, type AccountContextValue } from '@/components/account/accountContext'
 import { ChangeNicknameDialog } from '@/components/account/ChangeNicknameDialog'
 import { LeaveEventDialog } from '@/components/account/LeaveEventDialog'
+import { SwitchAccountDialog } from '@/components/account/SwitchAccountDialog'
 import type { SectionNavLink } from '@/components/layout/SectionNav'
 import { CodeEntryScreen } from '@/components/screens/CodeEntryScreen'
 import { EventConfigScreen } from '@/components/screens/EventConfigScreen'
@@ -78,6 +79,7 @@ function App() {
     cancelPendingEvent,
     changeNickname,
     linkGoogle,
+    switchToGoogle,
     leaveEvent,
     logout,
   } = useEventSession()
@@ -150,6 +152,7 @@ function App() {
     photos,
     loading: loadingPhotos,
     error: photosError,
+    setError: setPhotosError,
     loadPhotos,
     getPhotoUrl,
   } = usePhotos(eventId)
@@ -242,6 +245,7 @@ function App() {
   // urządzeniu); konto Google wylogowuje się jak dotąd.
   const [leaveOpen, setLeaveOpen] = useState(false)
   const [nicknameOpen, setNicknameOpen] = useState(false)
+  const [switchOpen, setSwitchOpen] = useState(false)
   // Zwiększany po zmianie pseudonimu - lista zakupów pobiera nowe nazwy.
   const [nicknameVersion, setNicknameVersion] = useState(0)
 
@@ -266,9 +270,17 @@ function App() {
   const account = useMemo<AccountContextValue | null>(
     () =>
       hasNickname
-        ? { isAnonymous, onChangeNickname: () => setNicknameOpen(true), onLinkGoogle: () => void linkGoogle() }
+        ? {
+            isAnonymous,
+            onChangeNickname: () => setNicknameOpen(true),
+            onSwitchAccount: () => {
+              // Stary komunikat (np. nieudane połączenie z Google) znika.
+              setSessionError(null)
+              setSwitchOpen(true)
+            },
+          }
         : null,
-    [hasNickname, isAnonymous, linkGoogle]
+    [hasNickname, isAnonymous, setSessionError]
   )
 
   const organizerAccess: OrganizerAccess = {
@@ -344,6 +356,10 @@ function App() {
                 uploading={uploading}
                 uploadProgress={uploadProgress}
                 error={error}
+                onDismissError={() => {
+                  setSessionError(null)
+                  setPhotosError(null)
+                }}
                 navLinks={navLinks}
                 getShareLink={canShare ? getShareLink : undefined}
                 describeShareError={describeShareError}
@@ -465,6 +481,13 @@ function App() {
   return (
     <AccountContext.Provider value={account}>
       {renderScreen()}
+      <SwitchAccountDialog
+        open={switchOpen}
+        busy={submitting}
+        onOpenChange={setSwitchOpen}
+        onLink={() => void linkGoogle()}
+        onSwitch={() => void switchToGoogle()}
+      />
       <ChangeNicknameDialog
         open={nicknameOpen}
         nickname={nickname}

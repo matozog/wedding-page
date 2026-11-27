@@ -1,4 +1,4 @@
-import { Loader2, Share2 } from 'lucide-react'
+import { Loader2, Share2, X } from 'lucide-react'
 import { lazy, Suspense, useMemo, useState } from 'react'
 import { AboutCoupleSection } from '@/components/sections/AboutCoupleSection'
 import { ContactSection } from '@/components/sections/ContactSection'
@@ -42,6 +42,8 @@ type EventGalleryScreenProps = {
   uploading: boolean
   uploadProgress: number
   error: string | null
+  // Zamknięcie komunikatu błędu.
+  onDismissError: () => void
   navLinks?: readonly SectionNavLink[]
   // Link do udostępnienia wydarzenia; brak - użytkownik nie może udostępniać.
   getShareLink?: () => Promise<string>
@@ -92,6 +94,7 @@ export function EventGalleryScreen({
   uploading,
   uploadProgress,
   error,
+  onDismissError,
   navLinks,
   getShareLink,
   describeShareError,
@@ -229,8 +232,24 @@ export function EventGalleryScreen({
       )}
 
       {error && (
-        <div className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2">
-          <ErrorMessage message={error} />
+        <div
+          role="alert"
+          className="fixed bottom-4 left-1/2 z-50 flex w-[calc(100%-2rem)] max-w-md -translate-x-1/2 items-start gap-2 rounded-lg border border-destructive/40 bg-background p-1 shadow-lg"
+        >
+          <div className="min-w-0 flex-1">
+            <ErrorMessage message={error} />
+          </div>
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="size-8 shrink-0"
+            onClick={onDismissError}
+            aria-label="Zamknij komunikat"
+            title="Zamknij"
+          >
+            <X className="size-4" aria-hidden="true" />
+          </Button>
         </div>
       )}
     </div>
