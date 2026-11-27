@@ -57,5 +57,16 @@
     - przełącznik widoku telefon / desktop (goście wejdą głównie z telefonów);
     - alternatywa: podgląd obok formularza (podział ekranu) zamiast modala na szerokich ekranach.
 
+- [ ] **7. Scalanie konta anonimowego z istniejącym kontem Google**
+  - Teraz „Połącz z kontem Google” działa tylko dla **nowego** konta Google: to samo konto, wpisy zostają, nazwa z Google.
+  - Gdy konto Google ma już własne konto w aplikacji, Supabase zwraca `identity_already_exists` i pokazujemy tylko komunikat, a gość zostaje przy pseudonimie.
+  - Cel: przenieść dane gościa (pozycje listy zakupów, zdjęcia, wydatki, gości, członkostwa) na istniejące konto Google i usunąć konto anonimowe.
+  - Szkic: jednorazowy token tworzony w sesji anonimowej, potem logowanie Google, potem RPC `merge_anonymous_account(token)` (szczegóły: `docs/plans/shopping-list-fixes.md`, sekcja 5b).
+  - Do ustalenia:
+    - to samo wydarzenie na obu kontach: która rola zostaje (propozycja: wyższa);
+    - limit 50 pozycji listy na osobę po scaleniu;
+    - pliki zdjęć w storage ze ścieżką zawierającą `user_id` i polityki storage;
+    - co pokazać, gdy scalanie się nie uda (konto anonimowe ma zostać nienaruszone).
+
 ## Zrobione
 
