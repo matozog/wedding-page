@@ -61,13 +61,16 @@ export function ShoppingItemForm({
   // Pola zgodne z ustawieniami listy - także w panelu organizatora.
   const showNote = settings.showNote
   const showQuantity = settings.showQuantity
+  // Walidacja dopiero przy wysłaniu (potem na bieżąco). Przy 'onTouched'
+  // kliknięcie "Anuluj" zdejmowało fokus z pola nazwy, pojawiał się błąd,
+  // przyciski przesuwały się w dół i kliknięcie trafiało obok.
   const {
     register,
     handleSubmit,
     reset,
     setError,
     formState: { errors, isSubmitting },
-  } = useForm<FormValues>({ defaultValues: toValues(item), mode: 'onTouched' })
+  } = useForm<FormValues>({ defaultValues: toValues(item), mode: 'onSubmit', reValidateMode: 'onChange' })
 
   const submit = handleSubmit(async (values) => {
     if (busyRef.current) return
