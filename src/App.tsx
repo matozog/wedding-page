@@ -77,6 +77,7 @@ function App() {
     syncEventChange,
     cancelPendingEvent,
     changeNickname,
+    linkGoogle,
     leaveEvent,
     logout,
   } = useEventSession()
@@ -263,8 +264,11 @@ function App() {
   )
 
   const account = useMemo<AccountContextValue | null>(
-    () => (hasNickname ? { isAnonymous, onChangeNickname: () => setNicknameOpen(true) } : null),
-    [hasNickname, isAnonymous]
+    () =>
+      hasNickname
+        ? { isAnonymous, onChangeNickname: () => setNicknameOpen(true), onLinkGoogle: () => void linkGoogle() }
+        : null,
+    [hasNickname, isAnonymous, linkGoogle]
   )
 
   const organizerAccess: OrganizerAccess = {

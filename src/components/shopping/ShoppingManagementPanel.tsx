@@ -312,7 +312,6 @@ export function ShoppingManagementPanel({ eventId, userId }: ShoppingManagementP
           <ShoppingItemForm
             className="mt-4"
             settings={settings}
-            showAllFields
             showAssignToMe={settings.allowAssign}
             submitLabel="Dodaj"
             describeError={(err) => describeShoppingError(err, 'Nie udało się dodać pozycji.')}
@@ -327,7 +326,6 @@ export function ShoppingManagementPanel({ eventId, userId }: ShoppingManagementP
 
       <ShoppingItemDialogs
         settings={settings}
-        showAllFields
         editing={actions.editing}
         deleting={actions.deleting}
         onEditingChange={actions.setEditing}

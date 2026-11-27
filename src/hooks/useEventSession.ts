@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 import { adminEventExists } from '../lib/eventsAdminApi'
 import { ROUTES } from '../lib/routes'
 import {
+  IDENTITY_ALREADY_EXISTS_CODE,
   RATE_LIMIT_ERROR_CODE,
   checkEventCode,
   checkInvite,
@@ -12,6 +13,7 @@ import {
   getErrorMessage,
   joinEvent,
   joinEventByInvite,
+  linkGoogleAccount,
   readAuthRedirectErrorCode,
   signInWithGoogle,
 } from '../lib/eventApi'
@@ -324,12 +326,18 @@ export function useEventSession() {
   // Błąd lub anulowanie po powrocie z Google. Sprawdzony kod zostaje, więc
   // gość może spróbować ponownie albo podać pseudonim.
   useEffect(() => {
-    if (!readAuthRedirectErrorCode()) {
+    const code = readAuthRedirectErrorCode()
+
+    if (!code) {
       return
     }
 
     clearAuthRedirectParams()
-    setError('Logowanie przez Google nie powiodło się.')
+    setError(
+      code === IDENTITY_ALREADY_EXISTS_CODE
+        ? 'To konto Google ma już własne konto w aplikacji, więc nie można go połączyć z pseudonimem. Zostajesz przy pseudonimie.'
+        : 'Logowanie przez Google nie powiodło się.'
+    )
   }, [])
 
   const checkCode = useCallback(async () => {
@@ -596,6 +604,21 @@ export function useEventSession() {
     [refreshProfile]
   )
 
+  // Konto anonimowe łączy się z Google (przekierowanie). Po powrocie zdarzenie
+  // auth odświeża profil - to samo konto, już nie anonimowe, z nazwą z Google.
+  const linkGoogle = useCallback(async () => {
+    setError(null)
+
+    await runExclusive(async () => {
+      try {
+        await linkGoogleAccount()
+      } catch (err) {
+        console.error(err)
+        setError('Nie udało się połączyć z kontem Google.')
+      }
+    })
+  }, [runExclusive])
+
   // Wyjście z wydarzenia bez wylogowania - konto (i pseudonim) zostaje na
   // tym urządzeniu, ponowne wpisanie kodu od razu otwiera wydarzenie.
   const leaveEvent = useCallback(() => {
@@ -657,6 +680,7 @@ export function useEventSession() {
     syncEventChange,
     cancelPendingEvent,
     changeNickname,
+    linkGoogle,
     leaveEvent,
     logout,
   }

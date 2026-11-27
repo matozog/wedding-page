@@ -1,4 +1,4 @@
-import { Camera, LogOut, Loader2, UserPen } from 'lucide-react'
+import { Camera, Link2, LogOut, Loader2, UserPen } from 'lucide-react'
 import { useEffect, useMemo, useRef } from 'react'
 import { useAccount } from '@/components/account/accountContext'
 import {
@@ -89,6 +89,12 @@ export function SiteHeader({
               <button type="button" onClick={account.onChangeNickname} className={ACCOUNT_LINK_CLASS}>
                 <UserPen className="size-3" aria-hidden="true" />
                 Zmień pseudonim
+              </button>
+            )}
+            {account?.isAnonymous && (
+              <button type="button" onClick={account.onLinkGoogle} className={ACCOUNT_LINK_CLASS}>
+                <Link2 className="size-3" aria-hidden="true" />
+                Połącz z kontem Google
               </button>
             )}
             <button type="button" onClick={onLogout} className={ACCOUNT_LINK_CLASS}>

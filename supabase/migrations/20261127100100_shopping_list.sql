@@ -312,7 +312,7 @@ as $$
     -- content not configurable yet - hidden until it is
     (p_event_id, 'seating',  false, 'Informacje',   'Rozmieszczenie gości', null, null),
     -- hidden until the super admin turns it on
-    (p_event_id, 'shopping', false, 'Pomóż nam',    'Lista zakupów',
+    (p_event_id, 'shopping', false, null,           'Lista zakupów',
      'Dopisz, czego brakuje albo co przyniesiesz. Przypisz się do rzeczy, którą się zajmiesz.',
      'Lista jest pusta - dodaj pierwszą rzecz!'),
     (p_event_id, 'location', true,  'Jak dojechać', 'Dojazd',          null, null),

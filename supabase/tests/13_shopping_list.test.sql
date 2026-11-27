@@ -250,7 +250,7 @@ select throws_ok(format($$insert into public.event_shopping_items (event_id, nam
 reset role;
 delete from public.profiles where id = :G1;
 select ok((select count(*) = 0 from public.event_shopping_items where created_by = :G1 or assigned_to = :G1), 'removed profile: author / assignee -> null');
-select ok((select count(*) = 1 from public.event_shopping_items where name = 'Węgiel drzewny'), 'entries of a removed profile stay');
+select ok((select count(*) = 1 from public.event_shopping_items where event_id = :'ev' and name = 'Węgiel drzewny'), 'entries of a removed profile stay');
 
 select pg_temp.act_as(:S);
 select public.delete_event(:'ev');

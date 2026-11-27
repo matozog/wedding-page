@@ -89,7 +89,7 @@ export const EVENT_SECTIONS: readonly {
   { key: 'couple', label: 'O nas', navLabel: 'O nas', configurable: true },
   { key: 'schedule', label: 'Plan wydarzenia', navLabel: 'Plan', configurable: true },
   { key: 'seating', label: 'Plan sali', navLabel: 'Plan sali', configurable: true },
-  { key: 'shopping', label: 'Lista zakupów', navLabel: 'Lista', configurable: true },
+  { key: 'shopping', label: 'Lista zakupów', navLabel: 'Lista zakupów', configurable: true },
   { key: 'location', label: 'Jak dojechać', navLabel: 'Dojazd', configurable: true },
   { key: 'contact', label: 'Kontakt', navLabel: 'Kontakt', configurable: true },
   { key: 'footer', label: 'Stopka', navLabel: null, configurable: true },

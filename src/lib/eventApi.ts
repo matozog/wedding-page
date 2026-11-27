@@ -215,6 +215,26 @@ export const signInWithGoogle = async ({
   }
 }
 
+// Konto anonimowe (pseudonim) dostaje tożsamość Google - to samo konto
+// (ten sam user.id), więc zdjęcia i wpisy zostają, a profil bierze nazwę
+// z Google (trigger handle_auth_user_updated). Wymaga "manual linking"
+// w ustawieniach Auth w Supabase.
+//
+// Gdy to konto Google ma już własne konto w aplikacji, Supabase wraca
+// z kodem błędu IDENTITY_ALREADY_EXISTS_CODE.
+export const linkGoogleAccount = async (returnPath?: string) => {
+  const { error } = await supabase.auth.linkIdentity({
+    provider: 'google',
+    options: { redirectTo: getAuthRedirectUrl(returnPath) },
+  })
+
+  if (error) {
+    throw error
+  }
+}
+
+export const IDENTITY_ALREADY_EXISTS_CODE = 'identity_already_exists'
+
 // Po nieudanym/anulowanym logowaniu Supabase wraca z parametrami błędu
 // w query i/lub hashu URL.
 export const readAuthRedirectErrorCode = (): string | null => {

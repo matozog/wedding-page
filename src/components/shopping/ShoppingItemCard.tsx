@@ -54,11 +54,11 @@ export function ShoppingItemCard({
           {quantity && <span className="ml-2 text-sm font-normal text-muted-foreground">· {quantity}</span>}
         </p>
         {note && <p className="mt-1 whitespace-pre-line break-words text-sm text-muted-foreground">{note}</p>}
-        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+        <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
           {showAuthor && (
             <span>
               Dodał(a):{' '}
-              <span className="font-medium text-foreground">
+              <span className="font-semibold text-foreground">
                 {userId !== null && item.author?.id === userId ? 'Ty' : personName(item.author)}
               </span>
             </span>
@@ -67,13 +67,13 @@ export function ShoppingItemCard({
             <span>
               {item.assignee ? (
                 mine ? (
-                  <span className="inline-flex items-center gap-1 font-medium text-primary">
-                    <Check className="size-3.5" aria-hidden="true" />
+                  <span className="inline-flex items-center gap-1 font-semibold text-primary">
+                    <Check className="size-4" aria-hidden="true" />
                     Zajmujesz się tym
                   </span>
                 ) : (
                   <>
-                    Zajmuje się: <span className="font-medium text-foreground">{personName(item.assignee)}</span>
+                    Zajmuje się: <span className="font-semibold text-foreground">{personName(item.assignee)}</span>
                   </>
                 )
               ) : (

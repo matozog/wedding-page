@@ -1,4 +1,4 @@
-import { Loader2 } from 'lucide-react'
+import { Loader2, Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { ShoppingItemCard } from '@/components/shopping/ShoppingItemCard'
 import { ShoppingItemDialogs } from '@/components/shopping/ShoppingItemDialogs'
@@ -7,6 +7,7 @@ import { ShoppingRefreshError } from '@/components/shopping/ShoppingRefreshError
 import { useShoppingActions } from '@/components/shopping/useShoppingActions'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
 import { SECTION_IDS } from '@/config/navigation'
 import { useShoppingList } from '@/hooks/useShoppingList'
@@ -38,6 +39,7 @@ export function ShoppingListSection({
   const list = useShoppingList(eventId, refreshKey)
   const actions = useShoppingActions()
   const [onlyFree, setOnlyFree] = useState(false)
+  const [adding, setAdding] = useState(false)
   const { settings, items } = list
 
   const freeCount = useMemo(() => items.filter((item) => item.assignee === null).length, [items])
@@ -51,17 +53,29 @@ export function ShoppingListSection({
       <SectionHeading {...header} />
 
       <div className="mx-auto flex max-w-3xl flex-col gap-6">
-        <Card className="border-border/80 bg-card/80">
-          <CardContent className="pt-6">
-            <ShoppingItemForm
-              settings={settings}
-              showAssignToMe={settings.allowAssign}
-              submitLabel="Dodaj do listy"
-              describeError={(err) => describeShoppingError(err, 'Nie udało się dodać pozycji.')}
-              onSubmit={(input, assignToMe) => list.add(input, assignToMe ? userId : null)}
-            />
-          </CardContent>
-        </Card>
+        {/* Formularz domyślnie zwinięty; po dodaniu zostaje otwarty (kilka rzeczy z rzędu). */}
+        {adding ? (
+          <Card className="border-border/80 bg-card/80">
+            <CardContent className="pt-6">
+              <ShoppingItemForm
+                autoFocus
+                settings={settings}
+                showAssignToMe={settings.allowAssign}
+                submitLabel="Dodaj do listy"
+                describeError={(err) => describeShoppingError(err, 'Nie udało się dodać pozycji.')}
+                onCancel={() => setAdding(false)}
+                onSubmit={(input, assignToMe) => list.add(input, assignToMe ? userId : null)}
+              />
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="flex justify-center">
+            <Button type="button" onClick={() => setAdding(true)}>
+              <Plus className="size-4" aria-hidden="true" />
+              Dodaj produkt
+            </Button>
+          </div>
+        )}
 
         {list.failed && items.length === 0 ? (
           <div className="flex flex-col items-center gap-4" role="alert">
@@ -86,9 +100,7 @@ export function ShoppingListSection({
               </p>
               {settings.allowAssign && (
                 <label className="flex items-center gap-2 text-foreground">
-                  <input
-                    type="checkbox"
-                    className="size-4 accent-primary"
+                  <Checkbox
                     checked={onlyFree}
                     onChange={(e) => setOnlyFree(e.target.checked)}
                   />

@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { FormField } from '@/components/expenses/formField'
 import { fieldAria, textareaClass } from '@/components/expenses/formFieldProps'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -23,13 +24,13 @@ type ShoppingItemFormProps = {
   item?: ShoppingItem
   // Pole "Przypisz do mnie" (nowa pozycja, przypisywanie włączone).
   showAssignToMe?: boolean
-  // Organizer w panelu widzi wszystkie pola, niezależnie od ustawień strony.
-  showAllFields?: boolean
   submitLabel: string
   // Rzuca błąd z komunikatem dla użytkownika.
   onSubmit: (input: ShoppingItemInput, assignToMe: boolean) => Promise<void>
   describeError: (err: unknown) => string
   onCancel?: () => void
+  // Fokus na polu nazwy po otwarciu formularza.
+  autoFocus?: boolean
   className?: string
 }
 
@@ -48,17 +49,18 @@ export function ShoppingItemForm({
   settings,
   item,
   showAssignToMe = false,
-  showAllFields = false,
   submitLabel,
   onSubmit,
   describeError,
   onCancel,
+  autoFocus = false,
   className,
 }: ShoppingItemFormProps) {
   const id = useId()
   const busyRef = useRef(false)
-  const showNote = showAllFields || settings.showNote
-  const showQuantity = showAllFields || settings.showQuantity
+  // Pola zgodne z ustawieniami listy - także w panelu organizatora.
+  const showNote = settings.showNote
+  const showQuantity = settings.showQuantity
   const {
     register,
     handleSubmit,
@@ -106,6 +108,7 @@ export function ShoppingItemForm({
             type="text"
             autoComplete="off"
             placeholder="np. węgiel do grilla, głośnik"
+            autoFocus={autoFocus}
             className="aria-invalid:border-destructive"
             {...fieldAria(nameId, errors.name?.message)}
             {...register('name', {
@@ -187,7 +190,7 @@ export function ShoppingItemForm({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         {showAssignToMe && (
           <label className="flex items-center gap-2 text-sm text-foreground">
-            <input type="checkbox" className="size-4 accent-primary" {...register('assignToMe')} />
+            <Checkbox {...register('assignToMe')} />
             Przypisz do mnie - zajmę się tym
           </label>
         )}

@@ -125,7 +125,7 @@ function ShoppingListForm({
 
   return (
     <form noValidate onSubmit={(e) => void onSubmit(e)} className="flex flex-col gap-6">
-      <SectionHeaderFields idPrefix={`${id}-header`} register={register} errors={errors} navLabelPlaceholder="Lista" />
+      <SectionHeaderFields idPrefix={`${id}-header`} register={register} errors={errors} navLabelPlaceholder="Lista zakupów" />
       <TextAreaField
         id={`${id}-body`}
         label="Tekst pustej listy"

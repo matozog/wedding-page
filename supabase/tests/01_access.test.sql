@@ -138,9 +138,32 @@ reset role;
 update auth.users set is_anonymous = false, email = 'basia@example.com',
   raw_user_meta_data = '{"full_name":"Barbara Nowak","avatar_url":"https://x/b.png"}'
 where id = :G;
-select ok((select email = 'basia@example.com' and not is_anonymous and display_name = 'Ciocia Basia' and avatar_url = 'https://x/b.png' from public.profiles where id = :G),
-  'link Google: email/flag/avatar synced, chosen display name kept');
+select ok((select email = 'basia@example.com' and not is_anonymous and display_name = 'Barbara Nowak' and avatar_url = 'https://x/b.png' from public.profiles where id = :G),
+  'link Google: email/flag/avatar synced, nickname replaced by the Google name');
 select ok((select count(*) = 1 from public.event_members where user_id = :G), 'link Google: membership kept (same uid)');
+
+-- name only in the Google identity (not copied to user metadata)
+insert into auth.users (id, instance_id, aud, role, email, is_anonymous, raw_user_meta_data) values
+  ('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', null, true, '{"name":"Gość D"}');
+insert into auth.identities (provider_id, user_id, provider, identity_data)
+values ('google-d', '00000000-0000-0000-0000-0000000000d1', 'google',
+  '{"sub":"google-d","full_name":"Bogdan Kowalski","email":"bogdan@example.com"}');
+update auth.users set is_anonymous = false, raw_user_meta_data = '{}'
+where id = '00000000-0000-0000-0000-0000000000d1';
+select ok((select display_name = 'Bogdan Kowalski' and email = 'bogdan@example.com' from public.profiles where id = '00000000-0000-0000-0000-0000000000d1'),
+  'link Google: name and email from the Google identity');
+
+-- Google gives no name - nickname stays
+insert into auth.users (id, instance_id, aud, role, email, is_anonymous, raw_user_meta_data) values
+  ('00000000-0000-0000-0000-0000000000c1', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', null, true, '{"name":"Gość C"}');
+update auth.users set is_anonymous = false, email = 'c@example.com', raw_user_meta_data = '{}'
+where id = '00000000-0000-0000-0000-0000000000c1';
+select ok((select display_name = 'Gość C' and not is_anonymous from public.profiles where id = '00000000-0000-0000-0000-0000000000c1'),
+  'link Google without a name: nickname kept');
+
+-- later metadata changes do not overwrite the name
+update auth.users set raw_user_meta_data = '{"full_name":"Inna Nazwa"}' where id = :G;
+select ok((select display_name = 'Barbara Nowak' from public.profiles where id = :G), 'metadata update after linking keeps the name');
 
 -- anon role (no session) gets nothing
 set local role anon;

@@ -13,7 +13,6 @@ import { ShoppingItemForm } from './ShoppingItemForm'
 
 type ShoppingItemDialogsProps = {
   settings: ShoppingSettings
-  showAllFields?: boolean
   editing: ShoppingItem | null
   deleting: ShoppingItem | null
   onEditingChange: (item: ShoppingItem | null) => void
@@ -26,7 +25,6 @@ type ShoppingItemDialogsProps = {
 // Okna edycji i usuwania pozycji - wspólne dla strony i panelu.
 export function ShoppingItemDialogs({
   settings,
-  showAllFields = false,
   editing,
   deleting,
   onEditingChange,
@@ -47,7 +45,6 @@ export function ShoppingItemDialogs({
               key={editing.id}
               className="mt-4"
               settings={settings}
-              showAllFields={showAllFields}
               item={editing}
               submitLabel="Zapisz"
               describeError={(err) =>
