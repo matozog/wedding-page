@@ -485,8 +485,9 @@ function App() {
         open={switchOpen}
         busy={submitting}
         onOpenChange={setSwitchOpen}
-        onLink={() => void linkGoogle()}
-        onSwitch={() => void switchToGoogle()}
+        // Nieudana akcja zamyka okno - komunikat błędu jest pod nim.
+        onLink={() => void linkGoogle().then((started) => !started && setSwitchOpen(false))}
+        onSwitch={() => void switchToGoogle().then((started) => !started && setSwitchOpen(false))}
       />
       <ChangeNicknameDialog
         open={nicknameOpen}

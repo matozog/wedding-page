@@ -198,15 +198,17 @@ export function useEventSession() {
 
   // Dołączenie do wydarzenia. Zwraca false przy błędnym kodzie lub linku
   // (np. kod zmieniony w międzyczasie) - gość wraca wtedy do ekranu kodu.
+  // keepSessionOnFail - nieudane dołączenie nie zamyka wybranego wcześniej
+  // wydarzenia (np. nieaktualny link do innego wydarzenia).
   const joinWith = useCallback(
-    async (credential: JoinCredential, displayName?: string) => {
+    async (credential: JoinCredential, displayName?: string, { keepSessionOnFail = false } = {}) => {
       const fromInvite = 'inviteToken' in credential
       const event = fromInvite
         ? await joinEventByInvite(credential.inviteToken, displayName)
         : await joinEvent(credential.accessCode, displayName)
 
       if (!event) {
-        updateStored(null)
+        if (!keepSessionOnFail) updateStored(null)
         setError(fromInvite ? INVALID_INVITE_MESSAGE : INVALID_CODE_MESSAGE)
         return false
       }
@@ -323,8 +325,8 @@ export function useEventSession() {
     }
   }, [syncWithAuth])
 
-  // Błąd lub anulowanie po powrocie z Google. Sprawdzony kod zostaje, więc
-  // gość może spróbować ponownie albo podać pseudonim.
+  // Błąd lub anulowanie po powrocie z Google. Sprawdzony kod nowego gościa
+  // zostaje, więc może spróbować ponownie albo podać pseudonim.
   useEffect(() => {
     const code = readAuthRedirectErrorCode()
 
@@ -333,12 +335,21 @@ export function useEventSession() {
     }
 
     clearAuthRedirectParams()
+
+    // Kod skopiowany z dołączonego wydarzenia (przełączenie konta, członek bez
+    // nazwy) nie może zostać - późniejszy powrót z Google (np. połączenie
+    // konta) dołączyłby nim ponownie.
+    const waiting = pendingRef.current
+    if (waiting && storedRef.current?.session.id === waiting.event.id) {
+      updatePending(null)
+    }
+
     setError(
       code === IDENTITY_ALREADY_EXISTS_CODE
         ? 'To konto Google jest już używane w aplikacji, więc nie można go połączyć z pseudonimem. Aby z niego korzystać, wybierz „Przełącz konto” → „Zaloguj się kontem Google”.'
         : 'Logowanie przez Google nie powiodło się.'
     )
-  }, [])
+  }, [updatePending])
 
   const checkCode = useCallback(async () => {
     const accessCode = code.trim()
@@ -406,7 +417,9 @@ export function useEventSession() {
         if (await refreshProfile()) {
           // Równoległe sprawdzenie starej sesji mogło zdążyć pokazać
           // "Nie masz już dostępu" - po dołączeniu z linku jest nieaktualne.
-          if (await joinWith({ inviteToken })) {
+          // Link cofnięty w międzyczasie - zostaje dotychczasowe wydarzenie
+          // (jeśli było), z komunikatem o nieaktualnym linku.
+          if (await joinWith({ inviteToken }, undefined, { keepSessionOnFail: true })) {
             setError(null)
           }
           return
@@ -489,11 +502,11 @@ export function useEventSession() {
   }, [joinWith, nickname, refreshProfile, runExclusive, updatePending])
 
   // selectAccount - Google pokazuje wybór konta (przełączenie z pseudonimu
-  // na inne konto Google).
+  // na inne konto Google). Zwraca true, gdy przekierowanie do Google ruszyło.
   const startGoogleSignIn = useCallback(async (selectAccount: boolean) => {
     setError(null)
 
-    await runExclusive(async () => {
+    const result = await runExclusive(async () => {
       // Sprawdzony kod (albo link) czeka w sessionStorage na powrót z Google.
       // Nowy gość ma go już w pending, członek bez nazwy - w stored.
       const stored = storedRef.current
@@ -509,6 +522,7 @@ export function useEventSession() {
 
       try {
         await signInWithGoogle({ selectAccount })
+        return true
       } catch (err) {
         console.error(err)
         // Kod skopiowany z dołączonego wydarzenia nie może zostać, bo
@@ -518,8 +532,11 @@ export function useEventSession() {
           updatePending(null)
         }
         setError('Nie udało się zalogować przez Google.')
+        return false
       }
     })
+
+    return result ?? false
   }, [runExclusive, updatePending])
 
   const loginWithGoogle = useCallback(() => startGoogleSignIn(false), [startGoogleSignIn])
@@ -615,17 +632,22 @@ export function useEventSession() {
 
   // Konto anonimowe łączy się z Google (przekierowanie). Po powrocie zdarzenie
   // auth odświeża profil - to samo konto, już nie anonimowe, z nazwą z Google.
+  // Zwraca true, gdy przekierowanie do Google ruszyło.
   const linkGoogle = useCallback(async () => {
     setError(null)
 
-    await runExclusive(async () => {
+    const result = await runExclusive(async () => {
       try {
         await linkGoogleAccount()
+        return true
       } catch (err) {
         console.error(err)
         setError('Nie udało się połączyć z kontem Google.')
+        return false
       }
     })
+
+    return result ?? false
   }, [runExclusive])
 
   // Wyjście z wydarzenia bez wylogowania - konto (i pseudonim) zostaje na
